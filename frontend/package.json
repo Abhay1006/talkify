@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "chat-app": "file:..",
+    "frontend": "file:",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
@@ -31,6 +32,7 @@
     "eslint-plugin-react-refresh": "^0.4.7",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.7",
+    "@rollup/rollup-linux-x64-gnu": "4.6.1", 
     "vite": "^5.3.4"
   }
 }
