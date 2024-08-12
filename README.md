@@ -74,3 +74,8 @@ The application is deployed on [Render](https://render.com/). Follow these steps
 ## Contributing
 
 We welcome contributions to improve Talkify! If you have suggestions or find issues, feel free to open a pull request or submit an issue.
+
+
+
+https://github.com/user-attachments/assets/2442fc8a-6647-4cab-b3e5-15b07d6c0b99
+
