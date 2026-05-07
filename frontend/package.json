@@ -10,29 +10,33 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.1",
+    "@mui/material": "^9.0.1",
+    "@tanstack/react-query": "^5.100.9",
     "chat-app": "file:..",
+    "formik": "^2.4.9",
     "frontend": "file:",
+    "notistack": "^3.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hot-toast": "^2.4.1",
     "react-icons": "^5.2.1",
     "react-router-dom": "^6.26.0",
     "socket.io-client": "^4.7.5",
+    "vite-plugin-pwa": "^1.3.0",
+    "workbox-window": "^7.4.1",
+    "yup": "^1.7.1",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.20",
-    "daisyui": "^4.12.10",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.3",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.7",
-    "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.7",
-    "@rollup/rollup-linux-x64-gnu": "4.6.1", 
     "vite": "^5.3.4"
   }
 }

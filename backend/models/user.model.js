@@ -25,6 +25,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    bio: { type: String, default: '' },
+    publicKey: { type: String, default: '' },
+    lastSeen: { type: Date },
+    isOnline: { type: Boolean, default: false },
+    privacySettings: {
+      allowAnonymousMessages: { type: Boolean, default: false },
+      showLastSeen: { type: Boolean, default: true },
+      showProfilePic: { type: String, enum: ['everyone', 'contacts', 'nobody'], default: 'everyone' }
+    }
   },
   { timestamps: true }
 );

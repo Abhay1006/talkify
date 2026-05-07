@@ -1,29 +1,32 @@
-import { useEffect, useState } from "react";
-import useConversation from "../zustand/useConversations.js";
-import toast from "react-hot-toast";
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import useConversation from '../zustand/useConversations.js';
+import { apiClient } from '../api/client';
 
 const useGetMessages = () => {
-  const [loading, setLoading] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
   const { messages, setMessages, selectedConversation } = useConversation();
 
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['messages', selectedConversation?._id],
+    queryFn: () => apiClient.get(`/api/messages/${selectedConversation._id}`),
+    enabled: !!selectedConversation?._id,
+  });
+
   useEffect(() => {
-    const getMessages = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/messages/${selectedConversation._id}`);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        setMessages(data);
-      } catch (error) {
-        toast.error(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (data) {
+      setMessages(data);
+    }
+  }, [data, setMessages]);
 
-    if (selectedConversation?._id) getMessages();
-  }, [selectedConversation?._id, setMessages]);
+  useEffect(() => {
+    if (isError && error) {
+      enqueueSnackbar(error.message, { variant: 'error' });
+    }
+  }, [isError, error, enqueueSnackbar]);
 
-  return { messages, loading };
+  return { messages, loading: isLoading };
 };
+
 export default useGetMessages;

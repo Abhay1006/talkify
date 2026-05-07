@@ -15,8 +15,7 @@ export const SocketContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (authUser) {
-      const socket = io("https://talkify-etjd.onrender.com/", {
-        // Changed to 'http'
+      const socket = io("http://localhost:5001", {
         query: {
           userId: authUser._id,
         },

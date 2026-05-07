@@ -1,11 +1,13 @@
-import Conversation from "../models/converstation.model.js";
+import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { getReceiverSocketId } from "../socket/socket.js";
 import { io } from "../socket/socket.js"; // Assuming io is exported from socket.js
 
+import ChatRequest from "../models/chatRequest.model.js";
+
 export const sendMessage = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, ciphertext, iv, senderPublicKey } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
@@ -20,11 +22,28 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    const existingRequest = await ChatRequest.findOne({
+      $or: [
+        { senderId, receiverId },
+        { senderId: receiverId, receiverId: senderId }
+      ]
+    });
+    if (!existingRequest) {
+      await ChatRequest.create({ senderId, receiverId, status: 'pending' });
+    }
+
+
+    // Temporary fallback for E2E
+    const finalCiphertext = ciphertext || message || "encrypted";
+    const finalIv = iv || "default-iv";
+
     // Create new message
     const newMessage = new Message({
       senderId,
       receiverId,
-      message,
+      ciphertext: finalCiphertext,
+      iv: finalIv,
+      senderPublicKey: senderPublicKey || "default-key",
     });
 
     // Save message to conversation

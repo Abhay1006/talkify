@@ -15,6 +15,20 @@ const conversationSchema = new mongoose.Schema(
         default: [],
       },
     ],
+    status: {
+      type: String,
+      enum: ['active', 'blocked', 'pending'],
+      default: 'pending',
+    },
+    blockedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    isAnonymous: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
