@@ -1,43 +1,33 @@
-import { useState } from "react";
-import toast from "react-hot-toast";
-import { useAuthContext } from "../context/AuthContext";
+import { useMutation } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import { useAuthContext } from '../context/AuthContext';
+import { apiClient } from '../api/client';
 
 const useLogin = () => {
-  const [loading, setLoading] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
   const { setAuthUser } = useAuthContext();
 
-  const login = async (username, password) => {
-    const success = handleInputErrors({ username, password });
-    if (!success) return;
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      localStorage.setItem("chat-user", JSON.stringify(data));
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: (credentials) => apiClient.post('/api/auth/login', credentials),
+    onSuccess: (data) => {
+      localStorage.setItem('chat-user', JSON.stringify(data));
       setAuthUser(data);
+      enqueueSnackbar('Logged in successfully', { variant: 'success' });
+    },
+    onError: (error) => {
+      enqueueSnackbar(error.message, { variant: 'error' });
+    },
+  });
+
+  const login = async (username, password) => {
+    try {
+      await mutateAsync({ username, password });
     } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
+      // Error handled in onError
     }
   };
 
-  return { loading, login };
+  return { loading: isPending, login };
 };
 
 export default useLogin;
-
-function handleInputErrors({ username, password }) {
-  if (!username || !password) {
-    toast.error("Please fill all fields");
-    return false;
-  }
-  return true;
-}

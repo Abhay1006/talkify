@@ -1,30 +1,23 @@
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import { apiClient } from '../api/client';
 
 const useGetConversations = () => {
-  const [loading, setLoading] = useState(false);
-  const [conversations, setConversations] = useState([]);
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { data: conversations = [], isLoading, isError, error } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: () => apiClient.get('/api/users'),
+  });
 
   useEffect(() => {
-    const getConversations = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/users");
-        const data = await res.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        setConversations(data);
-      } catch (error) {
-        toast.error(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (isError && error) {
+      enqueueSnackbar(error.message, { variant: 'error' });
+    }
+  }, [isError, error, enqueueSnackbar]);
 
-    getConversations();
-  }, []);
-
-  return { loading, conversations };
+  return { loading: isLoading, conversations };
 };
+
 export default useGetConversations;

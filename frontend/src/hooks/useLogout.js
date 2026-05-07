@@ -1,32 +1,35 @@
-import { useState } from "react";
-import { useAuthContext } from "../context/AuthContext";
-import toast from "react-hot-toast";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import { useAuthContext } from '../context/AuthContext';
+import { apiClient } from '../api/client';
 
 const useLogout = () => {
-	const [loading, setLoading] = useState(false);
-	const { setAuthUser } = useAuthContext();
+  const { enqueueSnackbar } = useSnackbar();
+  const { setAuthUser } = useAuthContext();
+  const queryClient = useQueryClient();
 
-	const logout = async () => {
-		setLoading(true);
-		try {
-			const res = await fetch("/api/auth/logout", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-			});
-			const data = await res.json();
-			if (data.error) {
-				throw new Error(data.error);
-			}
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: () => apiClient.post('/api/auth/logout', {}),
+    onSuccess: () => {
+      localStorage.removeItem('chat-user');
+      setAuthUser(null);
+      queryClient.clear();
+      enqueueSnackbar('Logged out successfully', { variant: 'info' });
+    },
+    onError: (error) => {
+      enqueueSnackbar(error.message, { variant: 'error' });
+    },
+  });
 
-			localStorage.removeItem("chat-user");
-			setAuthUser(null);
-		} catch (error) {
-			toast.error(error.message);
-		} finally {
-			setLoading(false);
-		}
-	};
+  const logout = async () => {
+    try {
+      await mutateAsync();
+    } catch (error) {
+      // Error handled in onError
+    }
+  };
 
-	return { loading, logout };
+  return { loading: isPending, logout };
 };
+
 export default useLogout;

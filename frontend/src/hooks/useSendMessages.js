@@ -1,35 +1,33 @@
-import { useState } from "react";
-import useConversation from "../zustand/useConversations";
-import toast from "react-hot-toast";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
+import useConversation from '../zustand/useConversations';
+import { apiClient } from '../api/client';
 
 const useSendMessage = () => {
-  const [loading, setLoading] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
   const { messages, setMessages, selectedConversation } = useConversation();
+  const queryClient = useQueryClient();
+
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: (message) => apiClient.post(`/api/messages/send/${selectedConversation._id}`, { message }),
+    onSuccess: (data) => {
+      setMessages([...messages, data]);
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+    onError: (error) => {
+      enqueueSnackbar(error.message, { variant: 'error' });
+    },
+  });
 
   const sendMessage = async (message) => {
-    setLoading(true);
     try {
-      const res = await fetch(
-        `/api/messages/send/${selectedConversation._id}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ message }),
-        }
-      );
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      setMessages([...messages, data]);
+      await mutateAsync(message);
     } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
+      // Error handled in onError
     }
   };
 
-  return { sendMessage, loading };
+  return { sendMessage, loading: isPending };
 };
+
 export default useSendMessage;

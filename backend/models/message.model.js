@@ -12,9 +12,16 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    message: {
+    ciphertext: {
       type: String,
       required: true,
+    },
+    iv: {
+      type: String,
+      required: true,
+    },
+    senderPublicKey: {
+      type: String,
     },
   },
   { timestamps: true }
