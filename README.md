@@ -14,14 +14,14 @@ Talkify is a web application hosted on Render that facilitates seamless and inte
 
 ## Features
 
-- **Real-Time Communication**: Users can chat and interact in real-time.
-- **User-Friendly Interface**: The application has an intuitive and easy-to-navigate interface.
-- **Responsive Design**: The website is fully responsive and works on all device sizes.
+- **Real-Time Communication**: Users can chat and interact in real-time via WebSockets.
+- **User-Friendly Interface**: The application has an intuitive, premium glassmorphism interface.
+- **Mobile-Optimized & Responsive Design**: The website is fully responsive and optimized for mobile devices, featuring a native-like experience with safe area insets, touch-friendly interactions, and PWA (Progressive Web App) support.
 
 ## Tech Stack
 
-- **Frontend**: [React.js](https://reactjs.org/)
-- **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/)
+- **Frontend**: [React.js](https://reactjs.org/), [Material UI (MUI)](https://mui.com/), [Zustand](https://zustand-demo.pmnd.rs/)
+- **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), [Socket.io](https://socket.io/)
 - **Database**: [MongoDB](https://www.mongodb.com/)
 - **Hosting**: [Render](https://render.com/)
 
