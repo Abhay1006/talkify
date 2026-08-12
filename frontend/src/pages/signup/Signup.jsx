@@ -60,20 +60,37 @@ const Signup = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, py: 4 }}>
-      <Paper elevation={0} sx={{ p: { xs: 4, md: 5 }, width: '100%', maxWidth: 600, borderRadius: 4 }}>
-        <Box textAlign="center" mb={4}>
-          <Typography variant="h3" fontWeight="bold" color="text.primary" gutterBottom>
-            Talk<Typography component="span" variant="h3" color="primary" fontWeight="bold">ify</Typography>
+    <Box sx={{
+      minHeight: '100vh',
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: { xs: 'flex-start', sm: 'center' },
+      p: { xs: 2, sm: 2 },
+      py: { xs: 2, sm: 4 },
+      width: '100%',
+      overflow: 'auto',
+      WebkitOverflowScrolling: 'touch',
+    }}>
+      <Paper elevation={0} sx={{
+        p: { xs: 3, sm: 5 },
+        width: '100%',
+        maxWidth: { xs: '100%', sm: 600 },
+        borderRadius: { xs: 3, sm: 4 },
+      }}>
+        <Box textAlign="center" mb={{ xs: 2.5, sm: 4 }}>
+          <Typography variant="h3" fontWeight="bold" color="text.primary" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '3rem' } }}>
+            Talk<Typography component="span" variant="h3" color="primary" fontWeight="bold" sx={{ fontSize: 'inherit' }}>ify</Typography>
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>
             Create your account to start talking.
           </Typography>
         </Box>
 
         <form onSubmit={formik.handleSubmit}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 3 } }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 3 } }}>
               <TextField
                 fullWidth
                 id="fullName"
@@ -104,7 +121,7 @@ const Signup = () => {
               />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 3 } }}>
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <TextField
                   fullWidth
@@ -121,7 +138,7 @@ const Signup = () => {
                     startAdornment: <InputAdornment position="start"><Lock /></InputAdornment>,
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ minWidth: 44, minHeight: 44 }}>
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
                       </InputAdornment>
@@ -156,7 +173,7 @@ const Signup = () => {
                     startAdornment: <InputAdornment position="start"><Lock /></InputAdornment>,
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
+                        <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end" sx={{ minWidth: 44, minHeight: 44 }}>
                           {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
                       </InputAdornment>
@@ -167,7 +184,7 @@ const Signup = () => {
             </Box>
 
             <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                 <Wc fontSize="small" /> Gender
               </Typography>
               <ToggleButtonGroup
@@ -182,8 +199,8 @@ const Signup = () => {
                 fullWidth
                 sx={{ mt: 1 }}
               >
-                <ToggleButton value="male">Male</ToggleButton>
-                <ToggleButton value="female">Female</ToggleButton>
+                <ToggleButton value="male" sx={{ minHeight: 44 }}>Male</ToggleButton>
+                <ToggleButton value="female" sx={{ minHeight: 44 }}>Female</ToggleButton>
               </ToggleButtonGroup>
               {formik.touched.gender && formik.errors.gender && (
                 <Typography color="error" variant="caption" sx={{ mt: 1, display: 'block', ml: 2 }}>
@@ -193,7 +210,7 @@ const Signup = () => {
             </Box>
 
             <Box display="flex" justifyContent="flex-end">
-              <MuiLink component={Link} to="/login" variant="body2" color="primary" underline="hover">
+              <MuiLink component={Link} to="/login" variant="body2" color="primary" underline="hover" sx={{ minHeight: 44, display: 'flex', alignItems: 'center' }}>
                 Already have an account?
               </MuiLink>
             </Box>
@@ -205,14 +222,14 @@ const Signup = () => {
               type="submit" 
               disabled={loading}
               size="large"
-              sx={{ py: 1.5, mt: 2, fontSize: '1.1rem' }}
+              sx={{ py: 1.5, mt: { xs: 0.5, sm: 2 }, fontSize: { xs: '1rem', sm: '1.1rem' }, minHeight: 52 }}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
             </Button>
           </Box>
         </form>
       </Paper>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 6 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: { xs: 3, sm: 6 }, mb: 2, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
         &copy; {new Date().getFullYear()} Talkify Inc. All rights reserved.
       </Typography>
     </Box>

@@ -39,38 +39,42 @@ const Conversation = ({ conversation }) => {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 2,
-        p: 1.5,
+        gap: { xs: 1.5, sm: 2 },
+        p: { xs: 1.5, sm: 1.5 },
         borderRadius: 3,
         cursor: 'pointer',
         transition: 'all 0.2s',
         mb: 0.5,
+        minHeight: 56,
         bgcolor: isSelected ? 'primary.main' : 'transparent',
         '&:hover': {
           bgcolor: isSelected ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
+        },
+        '&:active': {
+          transform: 'scale(0.98)',
         }
       }}
     >
-      <Box sx={{ position: 'relative' }}>
+      <Box sx={{ position: 'relative', flexShrink: 0 }}>
         {isOnline ? (
           <StyledBadge overlap="circular" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} variant="dot">
-            <Avatar src={conversation.profilePic} variant="rounded" sx={{ width: 48, height: 48 }} />
+            <Avatar src={conversation.profilePic} variant="rounded" sx={{ width: { xs: 42, sm: 48 }, height: { xs: 42, sm: 48 } }} />
           </StyledBadge>
         ) : (
-          <Avatar src={conversation.profilePic} variant="rounded" sx={{ width: 48, height: 48 }} />
+          <Avatar src={conversation.profilePic} variant="rounded" sx={{ width: { xs: 42, sm: 48 }, height: { xs: 42, sm: 48 } }} />
         )}
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" fontWeight={600} color={isSelected ? 'white' : 'text.primary'} noWrap>
+          <Typography variant="body2" fontWeight={600} color={isSelected ? 'white' : 'text.primary'} noWrap sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
             {conversation.fullName}
           </Typography>
           {unreadCount > 0 && (
             <Badge badgeContent={unreadCount} color="error" sx={{ mr: 1, '& .MuiBadge-badge': { position: 'static', transform: 'none' } }} />
           )}
         </Box>
-        <Typography variant="caption" color={isSelected ? 'rgba(255,255,255,0.8)' : 'text.secondary'} noWrap>
+        <Typography variant="caption" color={isSelected ? 'rgba(255,255,255,0.8)' : 'text.secondary'} noWrap sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
           {isOnline ? "Online" : "Offline"}
         </Typography>
       </Box>

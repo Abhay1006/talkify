@@ -17,7 +17,17 @@ const Messages = () => {
   }, [messages]);
 
   return (
-    <Box sx={{ px: 4, flex: 1, overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{
+      px: { xs: 1.5, sm: 4 },
+      py: { xs: 1, sm: 2 },
+      flex: 1,
+      overflow: 'auto',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      WebkitOverflowScrolling: 'touch',
+      overscrollBehaviorY: 'contain',
+    }}>
       {!loading &&
         messages.length > 0 &&
         messages.map((message) => (
@@ -30,7 +40,7 @@ const Messages = () => {
       
       {!loading && messages.length === 0 && (
         <Box sx={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
             Send a message to start the conversation
           </Typography>
         </Box>

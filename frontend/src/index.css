@@ -8,15 +8,32 @@
   --bg-dark: #0f172a;
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.1);
+  /* Safe area insets for notched phones */
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Use dvh (dynamic viewport height) for mobile browsers that hide/show address bar */
+html, body, #root {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
   color: #f8fafc;
   overflow-x: hidden;
+  /* Prevent pull-to-refresh and overscroll bounce on mobile */
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body::before {
@@ -31,8 +48,13 @@ body::before {
   z-index: -1;
 }
 
+/* Prevent iOS zoom on input focus — must be >= 16px */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -47,6 +69,13 @@ body::before {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 92, 246, 0.6);
+}
+
+/* Touch-friendly smooth scrolling */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
 }
 
 .glass {
@@ -82,4 +111,38 @@ body::before {
 
 .input-premium {
   @apply bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all duration-300 text-white placeholder:text-gray-500;
+}
+
+/* Skeleton loading animation */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 600px) {
+  /* Ensure touch targets are at least 44px */
+  button, [role="button"], a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Tighter scrollbar on mobile */
+  ::-webkit-scrollbar {
+    width: 2px;
+  }
+}
+
+/* Handle keyboard appearance on mobile */
+@media (max-height: 500px) {
+  .chat-input-area {
+    padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+  }
 }

@@ -30,19 +30,34 @@ const Login = () => {
   });
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-      <Paper elevation={0} sx={{ p: { xs: 4, md: 6 }, width: '100%', maxWidth: 450, borderRadius: 4 }}>
-        <Box textAlign="center" mb={4}>
-          <Typography variant="h3" fontWeight="bold" color="text.primary" gutterBottom>
-            Talk<Typography component="span" variant="h3" color="primary" fontWeight="bold">ify</Typography>
+    <Box sx={{
+      minHeight: '100vh',
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      p: { xs: 2, sm: 2 },
+      width: '100%',
+    }}>
+      <Paper elevation={0} sx={{
+        p: { xs: 3, sm: 6 },
+        width: '100%',
+        maxWidth: { xs: '100%', sm: 450 },
+        borderRadius: { xs: 3, sm: 4 },
+        mx: { xs: 1, sm: 0 },
+      }}>
+        <Box textAlign="center" mb={{ xs: 3, sm: 4 }}>
+          <Typography variant="h3" fontWeight="bold" color="text.primary" gutterBottom sx={{ fontSize: { xs: '2rem', sm: '3rem' } }}>
+            Talk<Typography component="span" variant="h3" color="primary" fontWeight="bold" sx={{ fontSize: 'inherit' }}>ify</Typography>
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}>
             Welcome back! Please enter your details.
           </Typography>
         </Box>
 
         <form onSubmit={formik.handleSubmit}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2.5, sm: 3 } }}>
             <TextField
               fullWidth
               id="username"
@@ -87,6 +102,7 @@ const Login = () => {
                       aria-label="toggle password visibility"
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
+                      sx={{ minWidth: 44, minHeight: 44 }}
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -96,7 +112,7 @@ const Login = () => {
             />
 
             <Box display="flex" justifyContent="flex-end">
-              <MuiLink component={Link} to="/signup" variant="body2" color="primary" underline="hover">
+              <MuiLink component={Link} to="/signup" variant="body2" color="primary" underline="hover" sx={{ minHeight: 44, display: 'flex', alignItems: 'center' }}>
                 {"Don't"} have an account?
               </MuiLink>
             </Box>
@@ -108,14 +124,14 @@ const Login = () => {
               type="submit" 
               disabled={loading}
               size="large"
-              sx={{ py: 1.5, mt: 2, fontSize: '1.1rem' }}
+              sx={{ py: 1.5, mt: { xs: 1, sm: 2 }, fontSize: { xs: '1rem', sm: '1.1rem' }, minHeight: 52 }}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
             </Button>
           </Box>
         </form>
       </Paper>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 6 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: { xs: 3, sm: 6 }, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
         &copy; {new Date().getFullYear()} Talkify Inc. All rights reserved.
       </Typography>
     </Box>

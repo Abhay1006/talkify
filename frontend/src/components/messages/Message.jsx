@@ -14,20 +14,22 @@ const Message = ({ message }) => {
     : selectedConversation?.profilePic;
     
   return (
-    <Box sx={{ display: 'flex', width: '100%', mb: 3, justifyContent: fromMe ? 'flex-end' : 'flex-start' }}>
-      <Box sx={{ display: 'flex', maxWidth: '80%', flexDirection: fromMe ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 1 }}>
+    <Box sx={{ display: 'flex', width: '100%', mb: { xs: 1.5, sm: 3 }, justifyContent: fromMe ? 'flex-end' : 'flex-start' }}>
+      <Box sx={{ display: 'flex', maxWidth: { xs: '85%', sm: '80%' }, flexDirection: fromMe ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: { xs: 0.5, sm: 1 } }}>
         
-        <Box sx={{ flexShrink: 0, mb: 0.5 }}>
+        {/* Avatar — hidden on mobile for cleaner look */}
+        <Box sx={{ flexShrink: 0, mb: 0.5, display: { xs: 'none', sm: 'block' } }}>
           <Avatar src={profilePic} variant="rounded" sx={{ width: 32, height: 32, border: '1px solid rgba(255,255,255,0.1)' }} />
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: fromMe ? 'flex-end' : 'flex-start' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: fromMe ? 'flex-end' : 'flex-start', minWidth: 0 }}>
           <Box
             sx={{
-              px: 2.5, py: 1.5,
-              borderRadius: 3,
-              fontSize: '0.875rem',
+              px: { xs: 2, sm: 2.5 }, py: { xs: 1, sm: 1.5 },
+              borderRadius: { xs: 2.5, sm: 3 },
+              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
               wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
               ...(fromMe ? {
                 bgcolor: 'primary.main',
                 color: 'white',
@@ -43,7 +45,7 @@ const Message = ({ message }) => {
           >
             {message.message || message.ciphertext}
           </Box>
-          <Typography variant="caption" sx={{ mt: 0.5, px: 0.5, color: 'text.secondary', fontSize: '0.625rem', fontWeight: 500, textTransform: 'uppercase' }}>
+          <Typography variant="caption" sx={{ mt: 0.5, px: 0.5, color: 'text.secondary', fontSize: { xs: '0.55rem', sm: '0.625rem' }, fontWeight: 500, textTransform: 'uppercase' }}>
             {formattedTime}
           </Typography>
         </Box>

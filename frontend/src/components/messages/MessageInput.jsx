@@ -12,7 +12,11 @@ const MessageInput = () => {
 
   useEffect(() => {
     if (selectedConversation && inputRef.current) {
-      inputRef.current.focus();
+      // Small delay to prevent keyboard from opening on page load on mobile
+      const timer = setTimeout(() => {
+        inputRef.current.focus();
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [selectedConversation]);
 
@@ -21,6 +25,10 @@ const MessageInput = () => {
     if (!message) return;
     await sendMessage(message);
     setMessage("");
+    // Re-focus input after sending on mobile
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   return (
@@ -32,25 +40,31 @@ const MessageInput = () => {
         placeholder="Type a message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        size="small"
         sx={{
           bgcolor: 'rgba(255, 255, 255, 0.03)',
-          borderRadius: 4,
+          borderRadius: { xs: 3, sm: 4 },
           '& fieldset': { border: 'none' },
           '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' },
           '&.Mui-focused': { bgcolor: 'rgba(255, 255, 255, 0.05)' },
+          '& .MuiInputBase-input': {
+            py: { xs: 1.2, sm: 1.5 },
+            fontSize: { xs: '0.875rem', sm: '1rem' },
+          },
         }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
-                <FiPlusCircle size={22} />
+              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' }, minWidth: 40, minHeight: 40 }}>
+                <FiPlusCircle size={20} />
               </IconButton>
             </InputAdornment>
           ),
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'warning.main' }, mr: 1 }}>
-                <FiSmile size={22} />
+              {/* Hide emoji button on very small screens */}
+              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'warning.main' }, mr: { xs: 0.5, sm: 1 }, display: { xs: 'none', sm: 'inline-flex' }, minWidth: 40, minHeight: 40 }}>
+                <FiSmile size={20} />
               </IconButton>
               <IconButton 
                 type="submit"
@@ -59,13 +73,15 @@ const MessageInput = () => {
                   bgcolor: message.trim() ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
                   color: message.trim() ? 'white' : 'text.secondary',
                   borderRadius: 2,
-                  width: 40,
-                  height: 40,
+                  width: { xs: 38, sm: 40 },
+                  height: { xs: 38, sm: 40 },
+                  minWidth: 38,
+                  minHeight: 38,
                   '&:hover': { bgcolor: message.trim() ? 'primary.dark' : 'rgba(255, 255, 255, 0.05)' },
                   '&.Mui-disabled': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: 'text.disabled' }
                 }}
               >
-                {loading ? <CircularProgress size={20} color="inherit" /> : <FiSend size={18} />}
+                {loading ? <CircularProgress size={18} color="inherit" /> : <FiSend size={16} />}
               </IconButton>
             </InputAdornment>
           ),
