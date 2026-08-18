@@ -8,12 +8,15 @@ import { Box, Typography } from "@mui/material";
 const Messages = () => {
   const { messages, loading } = useGetMessages();
   useListenMessages();
-  const lastMessageRef = useRef();
+  // A single sentinel at the end of the list. The ref used to be attached to
+  // every message inside the map, which only worked because the last write won.
+  const bottomRef = useRef(null);
 
   useEffect(() => {
-    setTimeout(() => {
-      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+    const timer = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   return (
@@ -30,11 +33,7 @@ const Messages = () => {
     }}>
       {!loading &&
         messages.length > 0 &&
-        messages.map((message) => (
-          <Box key={message._id} ref={lastMessageRef}>
-            <Message message={message} />
-          </Box>
-        ))}
+        messages.map((message) => <Message key={message._id} message={message} />)}
 
       {loading && [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)}
       
@@ -45,6 +44,8 @@ const Messages = () => {
           </Typography>
         </Box>
       )}
+
+      <Box ref={bottomRef} />
     </Box>
   );
 };

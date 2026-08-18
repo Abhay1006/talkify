@@ -5,13 +5,13 @@ import { apiClient } from '../api/client';
 
 const useSendMessage = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const { messages, setMessages, selectedConversation } = useConversation();
+  const { appendMessage, selectedConversation } = useConversation();
   const queryClient = useQueryClient();
 
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (message) => apiClient.post(`/api/messages/send/${selectedConversation._id}`, { message }),
     onSuccess: (data) => {
-      setMessages([...messages, data]);
+      appendMessage(data);
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
     onError: (error) => {

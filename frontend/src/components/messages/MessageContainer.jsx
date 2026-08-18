@@ -8,10 +8,13 @@ import { Box, Typography, Avatar, Button, CircularProgress, IconButton } from "@
 import { apiClient } from "../../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
+import { useSocketContext } from "../../context/SocketContext";
 
 const MessageContainer = () => {
   const { selectedConversation, setSelectedConversation } = useConversation();
   const { authUser } = useAuthContext();
+  const { onlineUsers } = useSocketContext();
+  const isOnline = onlineUsers.includes(selectedConversation?._id);
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
@@ -87,8 +90,13 @@ const MessageContainer = () => {
                 <Typography variant="subtitle1" fontWeight={600} color="text.primary" lineHeight={1.2} noWrap sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                   {selectedConversation.fullName}
                 </Typography>
-                <Typography variant="caption" color="success.main" fontWeight={500} sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-                  Online
+                <Typography
+                  variant="caption"
+                  color={isOnline ? 'success.main' : 'text.secondary'}
+                  fontWeight={500}
+                  sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                >
+                  {isOnline ? 'Online' : 'Offline'}
                 </Typography>
               </Box>
             </Box>
@@ -162,16 +170,22 @@ const NoChatSelected = () => {
             Select a conversation from the sidebar to start messaging and sharing moments.
           </Typography>
         </Box>
-        <Box sx={{ 
-          display: 'inline-flex', alignItems: 'center', 
-          px: 2, py: 1, 
-          bgcolor: 'rgba(255,255,255,0.05)', 
-          border: '1px solid rgba(255,255,255,0.1)', 
-          borderRadius: 10, 
-          fontSize: '0.75rem', fontWeight: 500, color: 'text.secondary' 
+        {/*
+          This badge used to read "Talkify Secure Messaging" next to a green
+          dot, while messages were in fact stored as plaintext. Nothing in the
+          app encrypts anything yet, so the claim has been replaced with one
+          that is true. See docs/V2-REDESIGN.md §3.2.
+        */}
+        <Box sx={{
+          display: 'inline-flex', alignItems: 'center',
+          px: 2, py: 1,
+          bgcolor: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 10,
+          fontSize: '0.75rem', fontWeight: 500, color: 'text.secondary'
         }}>
           <Box sx={{ width: 8, height: 8, bgcolor: '#4ade80', borderRadius: '50%', mr: 1 }} />
-          Talkify Secure Messaging
+          Connected
         </Box>
       </Box>
     </Box>

@@ -1,17 +1,29 @@
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
-import { getReceiverSocketId } from "../socket/socket.js";
-import { io } from "../socket/socket.js"; // Assuming io is exported from socket.js
-
 import ChatRequest from "../models/chatRequest.model.js";
+import { emitToUser } from "../socket/socket.js";
+import { checkCanMessage } from "../utils/messagePermissions.js";
+
+const MAX_MESSAGE_LENGTH = 4000;
 
 export const sendMessage = async (req, res) => {
   try {
-    const { message, ciphertext, iv, senderPublicKey } = req.body;
+    const { message } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
-    // Find or create conversation
+    if (typeof message !== "string" || !message.trim()) {
+      return res.status(400).json({ error: "Message cannot be empty" });
+    }
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters` });
+    }
+
+    const permission = await checkCanMessage(senderId, receiverId);
+    if (!permission.ok) {
+      return res.status(permission.status).json({ error: permission.error });
+    }
+
     let conversation = await Conversation.findOne({
       participants: { $all: [senderId, receiverId] },
     });
@@ -22,43 +34,44 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    if (conversation.status === "blocked") {
+      return res.status(403).json({ error: "This conversation is unavailable" });
+    }
+
     const existingRequest = await ChatRequest.findOne({
       $or: [
         { senderId, receiverId },
-        { senderId: receiverId, receiverId: senderId }
-      ]
+        { senderId: receiverId, receiverId: senderId },
+      ],
     });
+
+    // A rejected request means the recipient has already declined contact, so
+    // a new message must not silently reopen the thread.
+    if (existingRequest?.status === "rejected") {
+      return res.status(403).json({ error: "This conversation is unavailable" });
+    }
     if (!existingRequest) {
-      await ChatRequest.create({ senderId, receiverId, status: 'pending' });
+      // upsert, not create: two messages sent in quick succession would
+      // otherwise race and trip the unique index on { senderId, receiverId }.
+      await ChatRequest.updateOne(
+        { senderId, receiverId },
+        { $setOnInsert: { senderId, receiverId, status: "pending" } },
+        { upsert: true }
+      );
     }
 
-
-    // Temporary fallback for E2E
-    const finalCiphertext = ciphertext || message || "encrypted";
-    const finalIv = iv || "default-iv";
-
-    // Create new message
     const newMessage = new Message({
       senderId,
       receiverId,
-      ciphertext: finalCiphertext,
-      iv: finalIv,
-      senderPublicKey: senderPublicKey || "default-key",
+      body: message.trim(),
     });
 
-    // Save message to conversation
     conversation.messages.push(newMessage._id);
 
-    // Save conversation and new message
     await Promise.all([conversation.save(), newMessage.save()]);
 
-    // Get receiver's socket ID and emit new message
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    emitToUser(receiverId, "newMessage", newMessage);
 
-    // Respond with the newly created message
     res.status(201).json(newMessage);
   } catch (error) {
     console.error("Error in sending message", error);
@@ -71,21 +84,20 @@ export const getMessages = async (req, res) => {
     const { id: userToChat } = req.params;
     const senderId = req.user._id;
 
-    // Find conversation and populate messages
+    const permission = await checkCanMessage(senderId, userToChat);
+    if (!permission.ok) {
+      return res.status(permission.status).json({ error: permission.error });
+    }
+
     const conversation = await Conversation.findOne({
       participants: { $all: [senderId, userToChat] },
     }).populate("messages");
 
-    // If conversation not found, return empty array
     if (!conversation) {
       return res.status(200).json([]);
     }
 
-    // Extract messages from conversation
-    const messages = conversation.messages;
-
-    // Respond with messages
-    res.status(200).json(messages);
+    res.status(200).json(conversation.messages);
   } catch (error) {
     console.error("Error in getting messages", error);
     res.status(500).json({ error: "Internal server error" });

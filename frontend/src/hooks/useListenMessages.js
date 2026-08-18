@@ -6,27 +6,42 @@ import useConversation from "../zustand/useConversations";
 
 import notificationSound from "../assets/sounds/notification.mp3";
 
+const sound = new Audio(notificationSound);
+
 const useListenMessages = () => {
 	const { socket } = useSocketContext();
-	const { messages, setMessages, selectedConversation, addUnreadMessage } = useConversation();
+	const { appendMessage, addUnreadMessage } = useConversation();
 	const queryClient = useQueryClient();
 
 	useEffect(() => {
-		socket?.on("newMessage", (newMessage) => {
-			newMessage.shouldShake = true;
-			const sound = new Audio(notificationSound);
-			sound.play();
+		if (!socket) return;
+
+		const handleNewMessage = (newMessage) => {
+			// Autoplay is blocked until the user has interacted with the page, and
+			// the resulting rejection was previously unhandled.
+			sound.currentTime = 0;
+			sound.play().catch(() => {});
+
+			// Read the selected conversation at event time rather than closing over
+			// it, so the handler never needs re-registering.
+			const { selectedConversation } = useConversation.getState();
 
 			if (selectedConversation?._id === newMessage.senderId) {
-				setMessages([...messages, newMessage]);
+				appendMessage(newMessage);
 			} else {
 				addUnreadMessage(newMessage.senderId);
 			}
 
-			queryClient.invalidateQueries({ queryKey: ['conversations'] });
-		});
+			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		};
 
-		return () => socket?.off("newMessage");
-	}, [socket, setMessages, messages, queryClient, selectedConversation, addUnreadMessage]);
+		socket.on("newMessage", handleNewMessage);
+
+		// Pass the handler so this removes only its own listener. The bare
+		// socket.off("newMessage") it replaced would have torn down every other
+		// feature's listener too.
+		return () => socket.off("newMessage", handleNewMessage);
+	}, [socket, appendMessage, addUnreadMessage, queryClient]);
 };
+
 export default useListenMessages;

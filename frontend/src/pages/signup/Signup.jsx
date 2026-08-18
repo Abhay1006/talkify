@@ -62,7 +62,7 @@ const Signup = () => {
   return (
     <Box sx={{
       minHeight: '100vh',
-      minHeight: '100dvh',
+      '@supports (min-height: 100dvh)': { minHeight: '100dvh' },
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',

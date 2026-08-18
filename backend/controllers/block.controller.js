@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import BlockList from "../models/blockList.model.js";
 import Conversation from "../models/conversation.model.js";
 
@@ -6,13 +7,24 @@ export const blockUser = async (req, res) => {
     const { userId: blockedUserId } = req.params;
     const userId = req.user._id;
 
-    const existingBlock = await BlockList.findOne({ userId, blockedUserId });
-    if (existingBlock) {
-      return res.status(400).json({ error: "User is already blocked" });
+    if (!mongoose.isValidObjectId(blockedUserId)) {
+      return res.status(400).json({ error: "Invalid user id" });
+    }
+    if (userId.toString() === blockedUserId) {
+      return res.status(400).json({ error: "You cannot block yourself" });
     }
 
-    const block = new BlockList({ userId, blockedUserId });
-    await block.save();
+    // upsert rather than check-then-insert: the compound unique index makes
+    // this safe against two concurrent block requests.
+    const result = await BlockList.updateOne(
+      { userId, blockedUserId },
+      { $setOnInsert: { userId, blockedUserId } },
+      { upsert: true }
+    );
+
+    if (result.upsertedCount === 0) {
+      return res.status(400).json({ error: "User is already blocked" });
+    }
 
     const conversation = await Conversation.findOne({
       participants: { $all: [userId, blockedUserId] }
@@ -35,6 +47,10 @@ export const unblockUser = async (req, res) => {
   try {
     const { userId: blockedUserId } = req.params;
     const userId = req.user._id;
+
+    if (!mongoose.isValidObjectId(blockedUserId)) {
+      return res.status(400).json({ error: "Invalid user id" });
+    }
 
     await BlockList.findOneAndDelete({ userId, blockedUserId });
 

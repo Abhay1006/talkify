@@ -43,7 +43,7 @@ const Message = ({ message }) => {
               })
             }}
           >
-            {message.message || message.ciphertext}
+            {message.body}
           </Box>
           <Typography variant="caption" sx={{ mt: 0.5, px: 0.5, color: 'text.secondary', fontSize: { xs: '0.55rem', sm: '0.625rem' }, fontWeight: 500, textTransform: 'uppercase' }}>
             {formattedTime}
