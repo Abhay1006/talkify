@@ -10,8 +10,10 @@ function App() {
 
   return (
     <Box sx={{
+      // A duplicate `height` key cannot express a fallback — the second simply
+      // overwrites the first. @supports is the way to keep the vh fallback.
       height: '100vh',
-      height: '100dvh',
+      '@supports (height: 100dvh)': { height: '100dvh' },
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',

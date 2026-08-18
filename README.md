@@ -16,7 +16,7 @@ Talkify is a web application hosted on Render that facilitates seamless and inte
 
 - **Real-Time Communication**: Users can chat and interact in real-time via WebSockets.
 - **User-Friendly Interface**: The application has an intuitive, premium glassmorphism interface.
-- **Mobile-Optimized & Responsive Design**: The website is fully responsive and optimized for mobile devices, featuring a native-like experience with safe area insets, touch-friendly interactions, and PWA (Progressive Web App) support.
+- **Mobile-Optimized & Responsive Design**: The website is fully responsive and optimized for mobile devices, featuring a native-like experience with safe area insets and touch-friendly interactions.
 
 ## Tech Stack
 
