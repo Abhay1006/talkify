@@ -37,9 +37,10 @@ const SearchInput = () => {
   return (
     <form className="sidebar-search" onSubmit={handleSubmit}>
       <input
+        id="sidebar-search"
         className="input"
         type="search"
-        placeholder="username"
+        placeholder="username  /"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         disabled={loading}

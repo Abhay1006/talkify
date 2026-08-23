@@ -21,8 +21,8 @@
   --border-soft: #e6e6e6;
 
   --text: #1a1a1a;
-  --text-muted: #767676;
-  --text-faint: #9a9a9a;
+  --text-muted: #5c5c5c;
+  --text-faint: #6e6e6e;
 
   --accent: #2b5faa;
   --accent-hover: #1e4885;
@@ -56,8 +56,8 @@
     --border-soft: #262a31;
 
     --text: #dfe3e8;
-    --text-muted: #8b929c;
-    --text-faint: #6b7280;
+    --text-muted: #a2a9b3;
+    --text-faint: #8b929c;
 
     --accent: #6ea8fe;
     --accent-hover: #8dbcff;
@@ -83,8 +83,8 @@
   --border-soft: #262a31;
 
   --text: #dfe3e8;
-  --text-muted: #8b929c;
-  --text-faint: #6b7280;
+  --text-muted: #a2a9b3;
+  --text-faint: #8b929c;
 
   --accent: #6ea8fe;
   --accent-hover: #8dbcff;
@@ -130,6 +130,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Dropping MUI took its focus rings with it, so the ring is defined once here
+   for every interactive element. :focus-visible keeps it off mouse clicks. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The accent ring would vanish against an accent-filled button; on those the
+   ring is drawn in the button's own label colour instead. */
+.btn-primary:focus-visible {
+  outline-color: var(--accent-text);
+  outline-offset: -4px;
+}
+
 a {
   color: var(--accent);
   text-decoration: none;
@@ -154,8 +168,10 @@ textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 2px;
-  outline: none;
-  /* iOS zooms any focused input under 16px. */
+  /* No `outline: none` here: it has the same specificity as the :focus-visible
+     rule above and comes later, so it silently cancelled the ring on every
+     text field. Text inputs match :focus-visible on pointer focus too, which
+     is correct — they accept keyboard input. */
   font-size: 16px;
 }
 
@@ -167,6 +183,10 @@ textarea {
 
 .input:focus {
   border-color: var(--accent);
+}
+
+.input:focus-visible {
+  outline-offset: -1px;
 }
 
 .input:disabled {

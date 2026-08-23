@@ -31,7 +31,12 @@ const Messages = () => {
   }, [messages, conversationId]);
 
   return (
-    <div className="messages" ref={listRef}>
+    <div
+      className="messages"
+      ref={listRef}
+      role="log"
+      aria-label="Messages"
+    >
       {loading && [...Array(4)].map((_, idx) => <MessageSkeleton key={idx} />)}
 
       {!loading &&

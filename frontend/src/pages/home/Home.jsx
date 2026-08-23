@@ -2,9 +2,11 @@ import MessageContainer from "../../components/messages/MessageContainer";
 import Sidebar from "../../components/sidebar/Sidebar";
 import TopBar from "../../components/TopBar";
 import useConversation from "../../zustand/useConversations.js";
+import useGlobalShortcuts from "../../hooks/useGlobalShortcuts";
 
 const Home = () => {
   const { selectedConversation } = useConversation();
+  useGlobalShortcuts();
 
   return (
     <div className="app">
