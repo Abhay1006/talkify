@@ -1,25 +1,22 @@
 import useGetConversations from "../../hooks/useGetConversations";
 import Conversation from "./Conversation";
-import { Box, CircularProgress } from "@mui/material";
 
 const Conversations = () => {
   const { loading, conversations } = useGetConversations();
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-      {conversations.map((conversation, idx) => (
-        <Conversation
-          key={conversation._id}
-          conversation={conversation}
-          lastIdx={idx === conversations.length - 1}
-        />
+    <div className="convo-list">
+      {conversations.map((conversation) => (
+        <Conversation key={conversation._id} conversation={conversation} />
       ))}
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <CircularProgress size={24} />
-        </Box>
-      ) : null}
-    </Box>
+      {loading && <div className="sidebar-empty">loading…</div>}
+
+      {!loading && conversations.length === 0 && (
+        <div className="sidebar-empty">No conversations yet. Search a username to start one.</div>
+      )}
+    </div>
   );
 };
+
 export default Conversations;

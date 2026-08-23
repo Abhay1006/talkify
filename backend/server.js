@@ -34,17 +34,19 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        // MUI/emotion injects styles at runtime, so inline styles are required.
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        imgSrc: ["'self'", "data:", "blob:", "https://api.dicebear.com"],
+        // The UI ships one static stylesheet and no inline styles or webfonts,
+        // so 'unsafe-inline' and the Google Fonts hosts are no longer needed.
+        styleSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "blob:"],
         connectSrc: ["'self'", "ws:", "wss:"],
         mediaSrc: ["'self'", "data:", "blob:"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
       },
     },
-    // Cross-origin isolation would block the dicebear avatars.
+    // Left off: enabling it would require CORP headers on every subresource
+    // for no benefit here.
     crossOriginEmbedderPolicy: false,
   })
 );

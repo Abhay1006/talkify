@@ -1,6 +1,6 @@
 # Talkify
 
-Talkify is a web application hosted on Render that facilitates seamless and interactive communication. It provides a user-friendly platform for discussions, chats, or any form of textual interaction.
+Talkify is a minimal real-time chat application hosted on Render. The interface is deliberately plain — no imagery, no decoration, just the conversation.
 
 ## Table of Contents
 
@@ -15,12 +15,14 @@ Talkify is a web application hosted on Render that facilitates seamless and inte
 ## Features
 
 - **Real-Time Communication**: Users can chat and interact in real-time via WebSockets.
-- **User-Friendly Interface**: The application has an intuitive, premium glassmorphism interface.
-- **Mobile-Optimized & Responsive Design**: The website is fully responsive and optimized for mobile devices, featuring a native-like experience with safe area insets and touch-friendly interactions.
+- **Minimal Interface**: A deliberately plain, text-first UI — flat surfaces, system fonts, no imagery or decoration. Consecutive messages from the same sender are grouped into one block.
+- **Light & Dark Themes**: Follows the operating system by default, with a toggle that persists the choice.
+- **No UI Framework**: The interface is plain semantic HTML and a single stylesheet of CSS custom properties, so there is no runtime styling work on the critical path.
+- **Mobile-Optimized & Responsive Design**: One pane at a time on narrow screens, with safe area insets and touch-friendly targets.
 
 ## Tech Stack
 
-- **Frontend**: [React.js](https://reactjs.org/), [Material UI (MUI)](https://mui.com/), [Zustand](https://zustand-demo.pmnd.rs/)
+- **Frontend**: [React.js](https://reactjs.org/), [Zustand](https://zustand-demo.pmnd.rs/), [TanStack Query](https://tanstack.com/query), plain CSS
 - **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), [Socket.io](https://socket.io/)
 - **Database**: [MongoDB](https://www.mongodb.com/)
 - **Hosting**: [Render](https://render.com/)

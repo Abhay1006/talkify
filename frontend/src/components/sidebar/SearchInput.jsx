@@ -1,65 +1,55 @@
 import { useState } from "react";
-import { FiSearch } from "react-icons/fi";
 import useConversation from "../../zustand/useConversations.js";
-import { useSnackbar } from "notistack";
-import { TextField, InputAdornment, Box } from "@mui/material";
+import { useToast } from "../../context/ToastContext";
 import { apiClient } from "../../api/client.js";
 
 const SearchInput = () => {
   const [search, setSearch] = useState("");
-  const { setSelectedConversation } = useConversation();
-  const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
+  const { setSelectedConversation } = useConversation();
+  const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!search) return;
-    if (search.length < 3) {
-      return enqueueSnackbar("Search term must be at least 3 characters long", { variant: 'error' });
+    const term = search.trim();
+    if (!term) return;
+    if (term.length < 3) {
+      toast("Search needs at least 3 characters", "error");
+      return;
     }
 
     setLoading(true);
     try {
-      const data = await apiClient.get(`/api/users/search?q=${search}`);
+      const data = await apiClient.get(`/api/users/search?q=${encodeURIComponent(term)}`);
       if (data.length > 0) {
         setSelectedConversation(data[0]);
         setSearch("");
       } else {
-        enqueueSnackbar("No such user found!", { variant: 'error' });
+        toast("No such user", "error");
       }
     } catch (error) {
-      enqueueSnackbar(error.message || "Failed to search user", { variant: 'error' });
+      toast(error.message || "Search failed", "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ position: 'relative' }}>
-      <TextField
-        fullWidth
-        variant="outlined"
-        placeholder="Search usernames..."
+    <form className="sidebar-search" onSubmit={handleSubmit}>
+      <input
+        className="input"
+        type="search"
+        placeholder="username"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        size="small"
         disabled={loading}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <FiSearch size={18} />
-            </InputAdornment>
-          ),
-          sx: {
-            bgcolor: 'rgba(255, 255, 255, 0.03)',
-            borderRadius: 3,
-            '& fieldset': { border: 'none' },
-            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
-            '&.Mui-focused': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
-          }
-        }}
+        aria-label="Search usernames"
       />
-    </Box>
+      <button type="submit" className="btn" disabled={loading}>
+        Go
+      </button>
+    </form>
   );
 };
+
 export default SearchInput;

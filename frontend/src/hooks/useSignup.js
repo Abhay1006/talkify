@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
+import { useToast } from '../context/ToastContext';
 import { useAuthContext } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 
 const useSignup = () => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { toast } = useToast();
   const { setAuthUser } = useAuthContext();
 
   const { mutateAsync, isPending } = useMutation({
@@ -12,10 +12,10 @@ const useSignup = () => {
     onSuccess: (data) => {
       localStorage.setItem('chat-user', JSON.stringify(data));
       setAuthUser(data);
-      enqueueSnackbar('Account created successfully', { variant: 'success' });
+      toast('Account created successfully', 'success');
     },
     onError: (error) => {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      toast(error.message, 'error');
     },
   });
 

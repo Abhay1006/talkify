@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
+import { useToast } from '../context/ToastContext';
 import useConversation from '../zustand/useConversations';
 import { apiClient } from '../api/client';
 
 const useSendMessage = () => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { toast } = useToast();
   const { appendMessage, selectedConversation } = useConversation();
   const queryClient = useQueryClient();
 
@@ -15,7 +15,7 @@ const useSendMessage = () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
     onError: (error) => {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      toast(error.message, 'error');
     },
   });
 

@@ -1,52 +1,52 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import useGetMessages from "../../hooks/useGetMessages";
 import MessageSkeleton from "../skeletons/MessageSkeletons";
 import Message from "./Message";
 import useListenMessages from "../../hooks/useListenMessages";
-import { Box, Typography } from "@mui/material";
+import useConversation from "../../zustand/useConversations.js";
 
 const Messages = () => {
   const { messages, loading } = useGetMessages();
+  const { selectedConversation } = useConversation();
   useListenMessages();
-  // A single sentinel at the end of the list. The ref used to be attached to
-  // every message inside the map, which only worked because the last write won.
-  const bottomRef = useRef(null);
+
+  const listRef = useRef(null);
+  const conversationId = selectedConversation?._id;
+  // Opening a conversation should land at the bottom with no visible travel;
+  // only messages arriving in an already-open thread animate.
+  const jumpRef = useRef(true);
+
+  useLayoutEffect(() => {
+    jumpRef.current = true;
+  }, [conversationId]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [messages]);
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTo({
+      top: list.scrollHeight,
+      behavior: jumpRef.current ? "auto" : "smooth",
+    });
+    jumpRef.current = false;
+  }, [messages, conversationId]);
 
   return (
-    <Box sx={{
-      px: { xs: 1.5, sm: 4 },
-      py: { xs: 1, sm: 2 },
-      flex: 1,
-      overflow: 'auto',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      WebkitOverflowScrolling: 'touch',
-      overscrollBehaviorY: 'contain',
-    }}>
+    <div className="messages" ref={listRef}>
+      {loading && [...Array(4)].map((_, idx) => <MessageSkeleton key={idx} />)}
+
       {!loading &&
-        messages.length > 0 &&
-        messages.map((message) => <Message key={message._id} message={message} />)}
+        messages.map((message, idx) => (
+          <Message
+            key={message._id}
+            message={message}
+            previous={messages[idx - 1]}
+          />
+        ))}
 
-      {loading && [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)}
-      
       {!loading && messages.length === 0 && (
-        <Box sx={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-            Send a message to start the conversation
-          </Typography>
-        </Box>
+        <div className="empty">No messages yet. Say something.</div>
       )}
-
-      <Box ref={bottomRef} />
-    </Box>
+    </div>
   );
 };
 

@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
+import { useToast } from '../context/ToastContext';
 import { useAuthContext } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 
 const useLogout = () => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { toast } = useToast();
   const { setAuthUser } = useAuthContext();
   const queryClient = useQueryClient();
 
@@ -14,10 +14,10 @@ const useLogout = () => {
       localStorage.removeItem('chat-user');
       setAuthUser(null);
       queryClient.clear();
-      enqueueSnackbar('Logged out successfully', { variant: 'info' });
+      toast('Logged out successfully', 'info');
     },
     onError: (error) => {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      toast(error.message, 'error');
     },
   });
 

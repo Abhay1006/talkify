@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
+import { useToast } from '../context/ToastContext';
 import { apiClient } from '../api/client';
 
 const useGetConversations = () => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { toast } = useToast();
 
   const { data: conversations = [], isLoading, isError, error } = useQuery({
     queryKey: ['conversations'],
@@ -13,9 +13,9 @@ const useGetConversations = () => {
 
   useEffect(() => {
     if (isError && error) {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      toast(error.message, 'error');
     }
-  }, [isError, error, enqueueSnackbar]);
+  }, [isError, error, toast]);
 
   return { loading: isLoading, conversations };
 };
