@@ -1,34 +1,35 @@
 import { useState, useRef, useEffect } from "react";
-import { FiSend, FiPlusCircle, FiSmile } from "react-icons/fi";
-import useSendMessage from "../../hooks/useSendMessages.js";
-import useConversation from "../../zustand/useConversations.js";
 import { Box, TextField, IconButton, CircularProgress, InputAdornment } from "@mui/material";
+import { Send } from "@mui/icons-material";
+import useSendMessage from "../../hooks/useSendMessages.js";
 
-const MessageInput = () => {
+// Mirrors MAX_MESSAGE_LENGTH in backend/controllers/message.controller.js.
+const MAX_MESSAGE_LENGTH = 4000;
+
+const MessageInput = ({ receiverId }) => {
   const [message, setMessage] = useState("");
-  const { loading, sendMessage } = useSendMessage();
-  const { selectedConversation } = useConversation();
+  const { loading, sendMessage } = useSendMessage(receiverId);
   const inputRef = useRef(null);
+  const canSend = message.trim().length > 0 && !loading;
 
   useEffect(() => {
-    if (selectedConversation && inputRef.current) {
-      // Small delay to prevent keyboard from opening on page load on mobile
-      const timer = setTimeout(() => {
-        inputRef.current.focus();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedConversation]);
+    // Small delay to prevent keyboard from opening on page load on mobile
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [receiverId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!message) return;
-    await sendMessage(message);
-    setMessage("");
-    // Re-focus input after sending on mobile
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    // Enter submits the form directly, so this check — not just the disabled
+    // button — is what stops whitespace-only messages and double sends.
+    if (!canSend) return;
+
+    const sent = await sendMessage(message);
+    // Keep the text on failure so the user can retry without retyping.
+    if (sent) setMessage("");
+    inputRef.current?.focus();
   };
 
   return (
@@ -52,39 +53,34 @@ const MessageInput = () => {
             fontSize: { xs: '0.875rem', sm: '1rem' },
           },
         }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' }, minWidth: 40, minHeight: 40 }}>
-                <FiPlusCircle size={20} />
-              </IconButton>
-            </InputAdornment>
-          ),
-          endAdornment: (
-            <InputAdornment position="end">
-              {/* Hide emoji button on very small screens */}
-              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'warning.main' }, mr: { xs: 0.5, sm: 1 }, display: { xs: 'none', sm: 'inline-flex' }, minWidth: 40, minHeight: 40 }}>
-                <FiSmile size={20} />
-              </IconButton>
-              <IconButton 
-                type="submit"
-                disabled={loading || !message.trim()}
-                sx={{ 
-                  bgcolor: message.trim() ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
-                  color: message.trim() ? 'white' : 'text.secondary',
-                  borderRadius: 2,
-                  width: { xs: 38, sm: 40 },
-                  height: { xs: 38, sm: 40 },
-                  minWidth: 38,
-                  minHeight: 38,
-                  '&:hover': { bgcolor: message.trim() ? 'primary.dark' : 'rgba(255, 255, 255, 0.05)' },
-                  '&.Mui-disabled': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: 'text.disabled' }
-                }}
-              >
-                {loading ? <CircularProgress size={18} color="inherit" /> : <FiSend size={16} />}
-              </IconButton>
-            </InputAdornment>
-          ),
+        // MUI v9 ignores the old InputProps/inputProps props; slotProps is the
+        // only way these reach the input.
+        slotProps={{
+          htmlInput: { maxLength: MAX_MESSAGE_LENGTH, 'aria-label': 'Message' },
+          input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  type="submit"
+                  aria-label="Send message"
+                  disabled={!canSend}
+                  sx={{
+                    bgcolor: canSend ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
+                    color: canSend ? 'white' : 'text.secondary',
+                    borderRadius: 2,
+                    width: { xs: 38, sm: 40 },
+                    height: { xs: 38, sm: 40 },
+                    minWidth: 38,
+                    minHeight: 38,
+                    '&:hover': { bgcolor: canSend ? 'primary.dark' : 'rgba(255, 255, 255, 0.05)' },
+                    '&.Mui-disabled': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: 'text.disabled' }
+                  }}
+                >
+                  {loading ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          },
         }}
       />
     </Box>

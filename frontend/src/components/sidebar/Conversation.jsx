@@ -1,6 +1,5 @@
-import { useSocketContext } from "../../context/SocketContext";
-import useConversation from "../../zustand/useConversations";
-import { Box, Typography, Avatar, Badge } from "@mui/material";
+import { memo } from "react";
+import { Box, Typography, Avatar, Badge, ButtonBase } from "@mui/material";
 import { styled } from '@mui/material/styles';
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
@@ -26,29 +25,46 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const Conversation = ({ conversation }) => {
-  const { selectedConversation, setSelectedConversation, unreadMessages } = useConversation();
-  const isSelected = selectedConversation?._id === conversation._id;
-  const { onlineUsers } = useSocketContext();
-  const isOnline = onlineUsers.includes(conversation._id);
-  const unreadCount = unreadMessages[conversation._id] || 0;
+const describe = ({ conversation, isOnline, unreadCount }) =>
+  [
+    conversation.fullName,
+    isOnline ? "online" : "offline",
+    unreadCount > 0 ? `${unreadCount} unread` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+// A real button (ButtonBase) rather than a clickable Box, so it can be reached
+// and opened from the keyboard and is announced properly by screen readers.
+const Conversation = ({ conversation, isSelected, isOnline, unreadCount, onSelect }) => {
+  const avatar = (
+    <Avatar src={conversation.profilePic} alt="" variant="rounded" sx={{ width: { xs: 42, sm: 48 }, height: { xs: 42, sm: 48 } }} />
+  );
 
   return (
-    <Box
-      onClick={() => setSelectedConversation(conversation)}
+    <ButtonBase
+      onClick={() => onSelect(conversation)}
+      aria-current={isSelected ? "true" : undefined}
+      aria-label={describe({ conversation, isOnline, unreadCount })}
       sx={{
         display: 'flex',
+        width: '100%',
+        justifyContent: 'flex-start',
+        textAlign: 'left',
         alignItems: 'center',
         gap: { xs: 1.5, sm: 2 },
-        p: { xs: 1.5, sm: 1.5 },
+        p: 1.5,
         borderRadius: 3,
-        cursor: 'pointer',
         transition: 'all 0.2s',
         mb: 0.5,
         minHeight: 56,
         bgcolor: isSelected ? 'primary.main' : 'transparent',
         '&:hover': {
           bgcolor: isSelected ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
+        },
+        '&.Mui-focusVisible': {
+          outline: '2px solid',
+          outlineColor: 'primary.light',
         },
         '&:active': {
           transform: 'scale(0.98)',
@@ -58,11 +74,9 @@ const Conversation = ({ conversation }) => {
       <Box sx={{ position: 'relative', flexShrink: 0 }}>
         {isOnline ? (
           <StyledBadge overlap="circular" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} variant="dot">
-            <Avatar src={conversation.profilePic} variant="rounded" sx={{ width: { xs: 42, sm: 48 }, height: { xs: 42, sm: 48 } }} />
+            {avatar}
           </StyledBadge>
-        ) : (
-          <Avatar src={conversation.profilePic} variant="rounded" sx={{ width: { xs: 42, sm: 48 }, height: { xs: 42, sm: 48 } }} />
-        )}
+        ) : avatar}
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
@@ -78,8 +92,8 @@ const Conversation = ({ conversation }) => {
           {isOnline ? "Online" : "Offline"}
         </Typography>
       </Box>
-    </Box>
+    </ButtonBase>
   );
 };
 
-export default Conversation;
+export default memo(Conversation);

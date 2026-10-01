@@ -5,13 +5,12 @@ import { apiClient } from '../api/client';
 
 const useLogin = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const { setAuthUser } = useAuthContext();
+  const { startSession } = useAuthContext();
 
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (credentials) => apiClient.post('/api/auth/login', credentials),
     onSuccess: (data) => {
-      localStorage.setItem('chat-user', JSON.stringify(data));
-      setAuthUser(data);
+      startSession(data);
       enqueueSnackbar('Logged in successfully', { variant: 'success' });
     },
     onError: (error) => {
@@ -22,8 +21,8 @@ const useLogin = () => {
   const login = async (username, password) => {
     try {
       await mutateAsync({ username, password });
-    } catch (error) {
-      // Error handled in onError
+    } catch {
+      // Reported in onError
     }
   };
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { 
+import {
   Box, Typography, TextField, Button, Paper, 
   InputAdornment, IconButton, CircularProgress, Link as MuiLink
 } from '@mui/material';
@@ -11,7 +11,7 @@ import useLogin from '../../hooks/useLogin';
 
 const validationSchema = yup.object({
   username: yup.string().required('Username is required'),
-  password: yup.string().min(6, 'Password should be of minimum 6 characters length').required('Password is required'),
+  password: yup.string().required('Password is required'),
 });
 
 const Login = () => {
@@ -63,19 +63,21 @@ const Login = () => {
               id="username"
               name="username"
               label="Username"
+              autoComplete="username"
+              autoCapitalize="none"
               placeholder="Enter your username"
               value={formik.values.username}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               error={formik.touched.username && Boolean(formik.errors.username)}
               helperText={formik.touched.username && formik.errors.username}
-              InputProps={{
+              slotProps={{ input: {
                 startAdornment: (
                   <InputAdornment position="start">
                     <Person />
                   </InputAdornment>
                 ),
-              }}
+              } }}
             />
 
             <TextField
@@ -83,6 +85,7 @@ const Login = () => {
               id="password"
               name="password"
               label="Password"
+              autoComplete="current-password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               value={formik.values.password}
@@ -90,7 +93,7 @@ const Login = () => {
               onBlur={formik.handleBlur}
               error={formik.touched.password && Boolean(formik.errors.password)}
               helperText={formik.touched.password && formik.errors.password}
-              InputProps={{
+              slotProps={{ input: {
                 startAdornment: (
                   <InputAdornment position="start">
                     <Lock />
@@ -108,7 +111,7 @@ const Login = () => {
                     </IconButton>
                   </InputAdornment>
                 )
-              }}
+              } }}
             />
 
             <Box display="flex" justifyContent="flex-end">

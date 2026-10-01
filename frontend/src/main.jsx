@@ -15,7 +15,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
+      // Retry once for network failures and server errors only. A 4xx (blocked,
+      // not found, unauthorized) will not change on a second attempt.
+      retry: (failureCount, error) =>
+        failureCount < 1 && (!error?.status || error.status >= 500),
     },
   },
 });

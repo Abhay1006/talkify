@@ -2,9 +2,12 @@ import { Box } from "@mui/material";
 import MessageContainer from "../../components/messages/MessageContainer";
 import Sidebar from "../../components/sidebar/Sidebar";
 import useConversation from "../../zustand/useConversations.js";
+import useListenMessages from "../../hooks/useListenMessages";
 
 const Home = () => {
-  const { selectedConversation } = useConversation();
+  const selectedConversation = useConversation((state) => state.selectedConversation);
+  // Here, not in the message pane, so it runs whether or not a chat is open.
+  useListenMessages();
 
   return (
     <Box sx={{

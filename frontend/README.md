@@ -1,8 +1,13 @@
-# React + Vite
+# Talkify frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 18 + Vite + MUI. See the [root README](../README.md) for setup.
 
-Currently, two official plugins are available:
+```bash
+npm run dev      # dev server on http://localhost:3000, proxies /api and /socket.io to :5001
+npm run build    # production build into dist/, served by the Express server
+npm run lint
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Server state lives in React Query (`src/queries/`). Socket events
+(`src/hooks/useListenMessages.js`) write into that cache directly. The only
+client state kept in zustand is the open conversation and unread counts.

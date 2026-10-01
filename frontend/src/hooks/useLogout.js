@@ -1,31 +1,31 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useAuthContext } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 
 const useLogout = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const { setAuthUser } = useAuthContext();
-  const queryClient = useQueryClient();
+  const { endSession } = useAuthContext();
 
   const { mutateAsync, isPending } = useMutation({
     mutationFn: () => apiClient.post('/api/auth/logout', {}),
-    onSuccess: () => {
-      localStorage.removeItem('chat-user');
-      setAuthUser(null);
-      queryClient.clear();
-      enqueueSnackbar('Logged out successfully', { variant: 'info' });
-    },
-    onError: (error) => {
-      enqueueSnackbar(error.message, { variant: 'error' });
+    // onSettled, not onSuccess: if the request fails (offline, server down) the
+    // user still asked to be logged out of this device, so the local session
+    // ends regardless. The cookie expires on its own.
+    onSettled: (_data, error) => {
+      endSession();
+      enqueueSnackbar(
+        error ? 'Logged out on this device. The server could not be reached.' : 'Logged out successfully',
+        { variant: error ? 'warning' : 'info' }
+      );
     },
   });
 
   const logout = async () => {
     try {
       await mutateAsync();
-    } catch (error) {
-      // Error handled in onError
+    } catch {
+      // Handled in onSettled
     }
   };
 
