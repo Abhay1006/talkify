@@ -26,7 +26,8 @@ const handleResponse = async (res) => {
   }
 
   if (!res.ok) {
-    const fallback = res.status >= 500 ? "The server is having trouble. Please try again." : "Something went wrong";
+    const fallback =
+      res.status >= 500 ? "The server is having trouble. Please try again." : "Something went wrong";
     throw new ApiError(data?.error || fallback, res.status);
   }
   return data;

@@ -8,27 +8,43 @@ const LogoutButton = () => {
   const { authUser } = useAuthContext();
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
-        <Avatar src={authUser.profilePic} alt="" variant="rounded" sx={{ width: { xs: 36, sm: 40 }, height: { xs: 36, sm: 40 }, border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <Typography variant="body2" fontWeight={600} color="text.primary" noWrap sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: 1 }}>
+        <Avatar
+          src={authUser.profilePic}
+          alt=""
+          variant="rounded"
+          sx={{
+            width: { xs: 36, sm: 40 },
+            height: { xs: 36, sm: 40 },
+            border: "1px solid rgba(255,255,255,0.1)",
+            flexShrink: 0,
+          }}
+        />
+        <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            color="text.primary"
+            noWrap
+            sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
+          >
             {authUser.fullName}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
             Talkify User
           </Typography>
         </Box>
       </Box>
-      
+
       <IconButton
         aria-label="Log out"
         onClick={logout}
         disabled={loading}
         color="error"
         sx={{
-          bgcolor: 'rgba(255, 255, 255, 0.05)',
-          '&:hover': { bgcolor: 'error.dark' },
+          bgcolor: "rgba(255, 255, 255, 0.05)",
+          "&:hover": { bgcolor: "error.dark" },
           minWidth: 44,
           minHeight: 44,
           flexShrink: 0,

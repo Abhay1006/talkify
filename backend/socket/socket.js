@@ -43,7 +43,9 @@ const server = http.createServer(app);
 // added via CLIENT_ORIGINS (comma separated).
 const allowedOrigins = [
   ...(process.env.NODE_ENV === "development" ? ["http://localhost:3000"] : []),
-  ...(process.env.CLIENT_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
+  ...(process.env.CLIENT_ORIGINS?.split(",")
+    .map((o) => o.trim())
+    .filter(Boolean) ?? []),
 ];
 
 const io = new Server(server, {
@@ -107,8 +109,7 @@ export const disconnectSession = (userId, token) => {
   }
 };
 
-const onlineContactsOf = async (userId) =>
-  (await getPresenceContactIds(userId)).filter(isUserOnline);
+const onlineContactsOf = async (userId) => (await getPresenceContactIds(userId)).filter(isUserOnline);
 
 // Presence goes only to accepted contacts. It used to be broadcast to every
 // connected client, which told anyone — including people you had blocked —

@@ -1,20 +1,20 @@
-import { useMutation } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
-import { useAuthContext } from '../context/AuthContext';
-import { apiClient } from '../api/client';
+import { useMutation } from "@tanstack/react-query";
+import { useSnackbar } from "notistack";
+import { useAuthContext } from "../context/AuthContext";
+import { apiClient } from "../api/client";
 
 const useSignup = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { startSession } = useAuthContext();
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (userData) => apiClient.post('/api/auth/signup', userData),
+    mutationFn: (userData) => apiClient.post("/api/auth/signup", userData),
     onSuccess: (data) => {
       startSession(data);
-      enqueueSnackbar('Account created successfully', { variant: 'success' });
+      enqueueSnackbar("Account created successfully", { variant: "success" });
     },
     onError: (error) => {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      enqueueSnackbar(error.message, { variant: "error" });
     },
   });
 

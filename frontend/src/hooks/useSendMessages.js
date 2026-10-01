@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
-import { apiClient } from '../api/client';
-import { conversationsQueryKey } from '../queries/conversations';
-import { appendMessageToCache } from '../queries/messages';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSnackbar } from "notistack";
+import { apiClient } from "../api/client";
+import { conversationsQueryKey } from "../queries/conversations";
+import { appendMessageToCache } from "../queries/messages";
 
 const useSendMessage = (receiverId) => {
   const { enqueueSnackbar } = useSnackbar();
@@ -16,7 +16,7 @@ const useSendMessage = (receiverId) => {
       queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
     },
     onError: (error) => {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      enqueueSnackbar(error.message, { variant: "error" });
       // A 403 usually means the request state changed underneath us (declined,
       // blocked, not yet accepted). Refresh so the UI shows the real state.
       if (error.status === 403) queryClient.invalidateQueries({ queryKey: conversationsQueryKey });

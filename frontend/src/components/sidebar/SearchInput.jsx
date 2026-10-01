@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { useSnackbar } from "notistack";
 import {
-  TextField, InputAdornment, Box, Paper, List, ListItemButton, ListItemAvatar,
-  ListItemText, Avatar, ClickAwayListener, CircularProgress, IconButton,
+  TextField,
+  InputAdornment,
+  Box,
+  Paper,
+  List,
+  ListItemButton,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
+  ClickAwayListener,
+  CircularProgress,
+  IconButton,
 } from "@mui/material";
 import { Close, Search } from "@mui/icons-material";
 import useConversation from "../../zustand/useConversations.js";
@@ -26,7 +36,7 @@ const SearchInput = () => {
     const term = search.trim();
     if (!term) return;
     if (term.length < MIN_LENGTH) {
-      enqueueSnackbar(`Search term must be at least ${MIN_LENGTH} characters long`, { variant: 'error' });
+      enqueueSnackbar(`Search term must be at least ${MIN_LENGTH} characters long`, { variant: "error" });
       return;
     }
 
@@ -36,7 +46,7 @@ const SearchInput = () => {
       const data = await apiClient.get(`/api/users/search?q=${encodeURIComponent(term)}`);
       setResults(data);
     } catch (error) {
-      enqueueSnackbar(error.message || "Failed to search users", { variant: 'error' });
+      enqueueSnackbar(error.message || "Failed to search users", { variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -57,7 +67,7 @@ const SearchInput = () => {
         role="search"
         onSubmit={handleSubmit}
         onKeyDown={(e) => e.key === "Escape" && closeResults()}
-        sx={{ position: 'relative' }}
+        sx={{ position: "relative" }}
       >
         <TextField
           fullWidth
@@ -67,11 +77,15 @@ const SearchInput = () => {
           onChange={(e) => setSearch(e.target.value)}
           size="small"
           slotProps={{
-            htmlInput: { 'aria-label': 'Search usernames', enterKeyHint: 'search' },
+            htmlInput: { "aria-label": "Search usernames", enterKeyHint: "search" },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  {loading ? <CircularProgress size={18} aria-label="Searching" /> : <Search sx={{ fontSize: 20 }} />}
+                  {loading ? (
+                    <CircularProgress size={18} aria-label="Searching" />
+                  ) : (
+                    <Search sx={{ fontSize: 20 }} />
+                  )}
                 </InputAdornment>
               ),
               endAdornment: search ? (
@@ -89,11 +103,11 @@ const SearchInput = () => {
                 </InputAdornment>
               ) : null,
               sx: {
-                bgcolor: 'rgba(255, 255, 255, 0.03)',
+                bgcolor: "rgba(255, 255, 255, 0.03)",
                 borderRadius: 3,
-                '& fieldset': { border: 'none' },
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
-                '&.Mui-focused': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
+                "& fieldset": { border: "none" },
+                "&:hover": { bgcolor: "rgba(255, 255, 255, 0.06)" },
+                "&.Mui-focused": { bgcolor: "rgba(255, 255, 255, 0.06)" },
               },
             },
           }}
@@ -103,12 +117,19 @@ const SearchInput = () => {
           <Paper
             elevation={8}
             sx={{
-              position: 'absolute', top: '100%', left: 0, right: 0, mt: 1, zIndex: 10,
-              maxHeight: 320, overflowY: 'auto', bgcolor: 'background.default',
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              mt: 1,
+              zIndex: 10,
+              maxHeight: 320,
+              overflowY: "auto",
+              bgcolor: "background.default",
             }}
           >
             {results.length === 0 ? (
-              <Box sx={{ p: 2, color: 'text.secondary', fontSize: '0.875rem' }} role="status">
+              <Box sx={{ p: 2, color: "text.secondary", fontSize: "0.875rem" }} role="status">
                 No users found
               </Box>
             ) : (

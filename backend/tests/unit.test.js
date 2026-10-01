@@ -26,12 +26,16 @@ test("decodeSessionToken rejects missing, tampered and expired tokens", () => {
   assert.equal(decodeSessionToken(undefined), null);
   assert.equal(decodeSessionToken({ $ne: null }), null);
   assert.equal(decodeSessionToken(jwt.sign({ userId: "u1" }, "wrong-secret")), null);
-  assert.equal(decodeSessionToken(jwt.sign({ userId: "u1" }, process.env.JWT_SECRET, { expiresIn: -10 })), null);
+  assert.equal(
+    decodeSessionToken(jwt.sign({ userId: "u1" }, process.env.JWT_SECRET, { expiresIn: -10 })),
+    null
+  );
   // "none" algorithm tokens must never verify.
   assert.equal(decodeSessionToken(jwt.sign({ userId: "u1" }, null, { algorithm: "none" })), null);
 });
 
 test("USERNAME_PATTERN", () => {
   for (const ok of ["abc", "john_doe", "j.d.99", "a".repeat(20)]) assert.ok(USERNAME_PATTERN.test(ok), ok);
-  for (const bad of ["ab", "John", "has space", "a".repeat(21), "x$y"]) assert.ok(!USERNAME_PATTERN.test(bad), bad);
+  for (const bad of ["ab", "John", "has space", "a".repeat(21), "x$y"])
+    assert.ok(!USERNAME_PATTERN.test(bad), bad);
 });

@@ -33,7 +33,7 @@ const MessageInput = ({ receiverId }) => {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ position: 'relative' }}>
+    <Box component="form" onSubmit={handleSubmit} sx={{ position: "relative" }}>
       <TextField
         inputRef={inputRef}
         fullWidth
@@ -43,20 +43,20 @@ const MessageInput = ({ receiverId }) => {
         onChange={(e) => setMessage(e.target.value)}
         size="small"
         sx={{
-          bgcolor: 'rgba(255, 255, 255, 0.03)',
+          bgcolor: "rgba(255, 255, 255, 0.03)",
           borderRadius: { xs: 3, sm: 4 },
-          '& fieldset': { border: 'none' },
-          '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' },
-          '&.Mui-focused': { bgcolor: 'rgba(255, 255, 255, 0.05)' },
-          '& .MuiInputBase-input': {
+          "& fieldset": { border: "none" },
+          "&:hover": { bgcolor: "rgba(255, 255, 255, 0.05)" },
+          "&.Mui-focused": { bgcolor: "rgba(255, 255, 255, 0.05)" },
+          "& .MuiInputBase-input": {
             py: { xs: 1.2, sm: 1.5 },
-            fontSize: { xs: '0.875rem', sm: '1rem' },
+            fontSize: { xs: "0.875rem", sm: "1rem" },
           },
         }}
         // MUI v9 ignores the old InputProps/inputProps props; slotProps is the
         // only way these reach the input.
         slotProps={{
-          htmlInput: { maxLength: MAX_MESSAGE_LENGTH, 'aria-label': 'Message' },
+          htmlInput: { maxLength: MAX_MESSAGE_LENGTH, "aria-label": "Message" },
           input: {
             endAdornment: (
               <InputAdornment position="end">
@@ -65,15 +65,15 @@ const MessageInput = ({ receiverId }) => {
                   aria-label="Send message"
                   disabled={!canSend}
                   sx={{
-                    bgcolor: canSend ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
-                    color: canSend ? 'white' : 'text.secondary',
+                    bgcolor: canSend ? "primary.main" : "rgba(255, 255, 255, 0.05)",
+                    color: canSend ? "white" : "text.secondary",
                     borderRadius: 2,
                     width: { xs: 38, sm: 40 },
                     height: { xs: 38, sm: 40 },
                     minWidth: 38,
                     minHeight: 38,
-                    '&:hover': { bgcolor: canSend ? 'primary.dark' : 'rgba(255, 255, 255, 0.05)' },
-                    '&.Mui-disabled': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: 'text.disabled' }
+                    "&:hover": { bgcolor: canSend ? "primary.dark" : "rgba(255, 255, 255, 0.05)" },
+                    "&.Mui-disabled": { bgcolor: "rgba(255, 255, 255, 0.05)", color: "text.disabled" },
                   }}
                 >
                   {loading ? <CircularProgress size={18} color="inherit" /> : <Send sx={{ fontSize: 18 }} />}

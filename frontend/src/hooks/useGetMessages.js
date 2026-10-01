@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
-import { fetchMessagesPage, messagesQueryKey } from '../queries/messages';
+import { useEffect, useMemo } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useSnackbar } from "notistack";
+import { fetchMessagesPage, messagesQueryKey } from "../queries/messages";
 
 const useGetMessages = (userId) => {
   const { enqueueSnackbar } = useSnackbar();
@@ -20,7 +20,7 @@ const useGetMessages = (userId) => {
 
   useEffect(() => {
     if (isError && error) {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      enqueueSnackbar(error.message, { variant: "error" });
     }
   }, [isError, error, enqueueSnackbar]);
 
@@ -30,7 +30,13 @@ const useGetMessages = (userId) => {
     [data]
   );
 
-  return { messages, loading: isLoading, fetchOlder: fetchNextPage, hasOlder: hasNextPage, loadingOlder: isFetchingNextPage };
+  return {
+    messages,
+    loading: isLoading,
+    fetchOlder: fetchNextPage,
+    hasOlder: hasNextPage,
+    loadingOlder: isFetchingNextPage,
+  };
 };
 
 export default useGetMessages;

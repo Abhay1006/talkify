@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import useConversation from '../zustand/useConversations';
-import { conversationsQuery } from '../queries/conversations';
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import useConversation from "../zustand/useConversations";
+import { conversationsQuery } from "../queries/conversations";
 
 /**
  * The open conversation, kept current. The store holds the snapshot taken when

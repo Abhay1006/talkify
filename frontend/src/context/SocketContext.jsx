@@ -87,9 +87,5 @@ export const SocketContextProvider = ({ children }) => {
     };
   }, [userId]);
 
-  return (
-    <SocketContext.Provider value={{ socket, onlineUsers, status }}>
-      {children}
-    </SocketContext.Provider>
-  );
+  return <SocketContext.Provider value={{ socket, onlineUsers, status }}>{children}</SocketContext.Provider>;
 };

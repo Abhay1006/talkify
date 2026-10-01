@@ -74,7 +74,9 @@ export const getMessages = async (req, res) => {
   };
 
   // Fetch one extra to learn whether an older page exists.
-  const page = await Message.find(filter).sort({ _id: -1 }).limit(MESSAGE_PAGE_SIZE + 1);
+  const page = await Message.find(filter)
+    .sort({ _id: -1 })
+    .limit(MESSAGE_PAGE_SIZE + 1);
 
   const hasMore = page.length > MESSAGE_PAGE_SIZE;
   const messages = page.slice(0, MESSAGE_PAGE_SIZE).reverse();

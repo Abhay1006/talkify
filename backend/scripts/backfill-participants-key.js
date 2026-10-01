@@ -54,9 +54,7 @@ const run = async () => {
     }
   }
 
-  console.log(
-    `${apply ? "" : "[dry run] "}${keyed} conversation(s) keyed, ${removed} duplicate(s) removed`
-  );
+  console.log(`${apply ? "" : "[dry run] "}${keyed} conversation(s) keyed, ${removed} duplicate(s) removed`);
   if (!apply && keyed + removed > 0) console.log("Re-run with --apply (after a backup) to write.");
 
   await mongoose.disconnect();

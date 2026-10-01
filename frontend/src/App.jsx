@@ -9,20 +9,22 @@ function App() {
   const { authUser, checkingSession } = useAuthContext();
 
   return (
-    <Box sx={{
-      // A duplicate `height` key cannot express a fallback — the second simply
-      // overwrites the first. @supports is the way to keep the vh fallback.
-      height: '100vh',
-      '@supports (height: 100dvh)': { height: '100dvh' },
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      p: { xs: 0, sm: 2 },
-      // Safe area padding for notched devices
-      paddingTop: { xs: 'env(safe-area-inset-top, 0px)', sm: 2 },
-      paddingBottom: { xs: 'env(safe-area-inset-bottom, 0px)', sm: 2 },
-    }}>
+    <Box
+      sx={{
+        // A duplicate `height` key cannot express a fallback — the second simply
+        // overwrites the first. @supports is the way to keep the vh fallback.
+        height: "100vh",
+        "@supports (height: 100dvh)": { height: "100dvh" },
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        p: { xs: 0, sm: 2 },
+        // Safe area padding for notched devices
+        paddingTop: { xs: "env(safe-area-inset-top, 0px)", sm: 2 },
+        paddingBottom: { xs: "env(safe-area-inset-bottom, 0px)", sm: 2 },
+      }}
+    >
       {checkingSession ? (
         <CircularProgress aria-label="Loading" />
       ) : (

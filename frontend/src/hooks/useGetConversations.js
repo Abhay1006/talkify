@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useSnackbar } from 'notistack';
-import { conversationsQuery } from '../queries/conversations';
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSnackbar } from "notistack";
+import { conversationsQuery } from "../queries/conversations";
 
 const useGetConversations = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -10,7 +10,7 @@ const useGetConversations = () => {
 
   useEffect(() => {
     if (isError && error) {
-      enqueueSnackbar(error.message, { variant: 'error' });
+      enqueueSnackbar(error.message, { variant: "error" });
     }
   }, [isError, error, enqueueSnackbar]);
 

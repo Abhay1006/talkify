@@ -37,13 +37,13 @@ export const sendChatRequest = async (req, res) => {
 export const getPendingRequests = async (req, res) => {
   const userId = req.user._id;
   const [requests, blockedIds] = await Promise.all([
-    ChatRequest.find({ receiverId: userId, status: "pending" }).populate("senderId", PUBLIC_USER_FIELDS).lean(),
+    ChatRequest.find({ receiverId: userId, status: "pending" })
+      .populate("senderId", PUBLIC_USER_FIELDS)
+      .lean(),
     getBlockedIds(userId),
   ]);
 
-  res
-    .status(200)
-    .json(requests.filter((r) => r.senderId && !blockedIds.has(r.senderId._id.toString())));
+  res.status(200).json(requests.filter((r) => r.senderId && !blockedIds.has(r.senderId._id.toString())));
 };
 
 // Loads a request the current user received and that is still awaiting an

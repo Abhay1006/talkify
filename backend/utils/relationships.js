@@ -71,7 +71,8 @@ const getRelationships = async (userId) => {
     if (other) touch(idOf(other)).hasConversation = true;
   }
   for (const request of requests) {
-    const otherId = idOf(request.senderId) === idOf(userId) ? idOf(request.receiverId) : idOf(request.senderId);
+    const otherId =
+      idOf(request.senderId) === idOf(userId) ? idOf(request.receiverId) : idOf(request.senderId);
     touch(otherId).request = request;
   }
 

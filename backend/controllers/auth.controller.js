@@ -81,9 +81,7 @@ export const signupUser = async (req, res) => {
     throw badRequest("Username must be 3-20 characters: letters, numbers, dots and underscores");
   }
   if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
-    throw badRequest(
-      `Password must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters`
-    );
+    throw badRequest(`Password must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters`);
   }
   if (password !== confirmPassword) {
     throw badRequest("Passwords don't match");

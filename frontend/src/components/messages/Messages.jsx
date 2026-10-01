@@ -74,20 +74,22 @@ const Messages = ({ conversation }) => {
         px: { xs: 1.5, sm: 4 },
         py: { xs: 1, sm: 2 },
         flex: 1,
-        overflow: 'auto',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        WebkitOverflowScrolling: 'touch',
-        overscrollBehaviorY: 'contain',
+        overflow: "auto",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        WebkitOverflowScrolling: "touch",
+        overscrollBehaviorY: "contain",
       }}
     >
       {hasOlder && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
           {loadingOlder ? (
             <CircularProgress size={20} aria-label="Loading older messages" />
           ) : (
-            <Button size="small" onClick={loadOlder}>Load older messages</Button>
+            <Button size="small" onClick={loadOlder}>
+              Load older messages
+            </Button>
           )}
         </Box>
       )}
@@ -105,8 +107,12 @@ const Messages = ({ conversation }) => {
       {loading && [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)}
 
       {!loading && messages.length === 0 && (
-        <Box sx={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+        <Box sx={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
+          >
             Send a message to start the conversation
           </Typography>
         </Box>

@@ -69,7 +69,13 @@ describe("API", { skip }, () => {
     });
 
     test("signup validates every field on the server", async () => {
-      const base = { fullName: "A", username: "valid_name", password: "secret123", confirmPassword: "secret123", gender: "male" };
+      const base = {
+        fullName: "A",
+        username: "valid_name",
+        password: "secret123",
+        confirmPassword: "secret123",
+        gender: "male",
+      };
       const cases = [
         { username: "no spaces" },
         { username: "ab" },
@@ -81,7 +87,9 @@ describe("API", { skip }, () => {
         { username: { $ne: null } },
       ];
       for (const override of cases) {
-        const res = await request(app).post("/api/auth/signup").send({ ...base, ...override });
+        const res = await request(app)
+          .post("/api/auth/signup")
+          .send({ ...base, ...override });
         assert.equal(res.status, 400, JSON.stringify(override));
       }
     });
@@ -106,7 +114,9 @@ describe("API", { skip }, () => {
       await User.updateOne({ username: "carol" }, { $set: { username: "Carol" } });
       await agent.post("/api/auth/logout");
 
-      const res = await request(app).post("/api/auth/login").send({ username: "carol", password: "secret123" });
+      const res = await request(app)
+        .post("/api/auth/login")
+        .send({ username: "carol", password: "secret123" });
       assert.equal(res.status, 200);
     });
 
@@ -191,7 +201,11 @@ describe("API", { skip }, () => {
       const a = await signup("racer_a");
       const b = await signup("racer_b");
 
-      const results = await Promise.all([send(a.agent, b.user), send(a.agent, b.user), send(a.agent, b.user)]);
+      const results = await Promise.all([
+        send(a.agent, b.user),
+        send(a.agent, b.user),
+        send(a.agent, b.user),
+      ]);
       assert.equal(results.filter((r) => r.status === 201).length, 1);
       assert.equal(await Conversation.countDocuments(), 1);
     });
@@ -237,7 +251,11 @@ describe("API", { skip }, () => {
       const b = await signup("pager_b");
       await Conversation.create({ participants: [a.user._id, b.user._id] });
       await Message.insertMany(
-        Array.from({ length: 60 }, (_, i) => ({ senderId: a.user._id, receiverId: b.user._id, body: `m${i}` }))
+        Array.from({ length: 60 }, (_, i) => ({
+          senderId: a.user._id,
+          receiverId: b.user._id,
+          body: `m${i}`,
+        }))
       );
 
       const first = await b.agent.get(`/api/messages/${a.user._id}`).expect(200);
@@ -246,7 +264,9 @@ describe("API", { skip }, () => {
       assert.equal(first.body.messages.at(-1).body, "m59");
       assert.ok(first.body.nextCursor);
 
-      const second = await b.agent.get(`/api/messages/${a.user._id}?before=${first.body.nextCursor}`).expect(200);
+      const second = await b.agent
+        .get(`/api/messages/${a.user._id}?before=${first.body.nextCursor}`)
+        .expect(200);
       assert.deepEqual(
         second.body.messages.map((m) => m.body),
         Array.from({ length: 10 }, (_, i) => `m${i}`)
@@ -261,7 +281,10 @@ describe("API", { skip }, () => {
       const b = await signup("valid_b");
       assert.equal((await send(a.agent, b.user, "   ")).status, 400);
       assert.equal((await send(a.agent, b.user, "x".repeat(4001))).status, 400);
-      assert.equal((await a.agent.post(`/api/messages/send/${b.user._id}`).send({ message: { $gt: "" } })).status, 400);
+      assert.equal(
+        (await a.agent.post(`/api/messages/send/${b.user._id}`).send({ message: { $gt: "" } })).status,
+        400
+      );
       assert.equal((await send(a.agent, a.user)).status, 400);
     });
   });
