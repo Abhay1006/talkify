@@ -5,7 +5,10 @@ import { mediaUrl } from "../../utils/prepareImage";
 import { imageSrcSet } from "../../utils/messageImage";
 import MessageImage from "./MessageImage";
 import { Box, Typography, Avatar, Button, CircularProgress } from "@mui/material";
-import { FiAlertCircle } from "react-icons/fi";
+import { FiAlertCircle, FiPhone, FiPhoneMissed, FiVideo } from "react-icons/fi";
+import { historyLabel } from "../../calls/callText";
+import { startCall } from "../../calls/callEngine";
+import { useCallStore } from "../../calls/callStore";
 
 const bubbleSx = (fromMe, hasImage) => ({
   ...(hasImage
@@ -49,10 +52,48 @@ const MessageRow = ({ fromMe, profilePic, bubble, footer }) => (
 
 const footerSx = { mt: 0.5, px: 0.5, color: 'text.secondary', fontSize: { xs: '0.55rem', sm: '0.625rem' }, fontWeight: 500, textTransform: 'uppercase' };
 
+// "Voice call · 2:31", "Missed video call" — centred, like a system line,
+// with a one-tap call back.
+const CallHistoryMessage = ({ message, fromMe }) => {
+  const { selectedConversation } = useConversation();
+  const busy = useCallStore((st) => !!st.call && !['ended', 'failed', 'error'].includes(st.call.phase));
+  const { call } = message;
+  const missed = call.status !== 'completed';
+  const Icon = missed && !fromMe ? FiPhoneMissed : call.kind === 'video' ? FiVideo : FiPhone;
+
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 1.5, sm: 2.5 } }}>
+      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, pl: 1.5, pr: 0.5, py: 0.5, borderRadius: 10, bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)', maxWidth: '100%' }}>
+        <Box component="span" sx={{ display: 'inline-flex', color: missed && !fromMe ? 'error.light' : 'text.secondary' }}>
+          <Icon size={15} aria-hidden />
+        </Box>
+        <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' }, color: missed && !fromMe ? 'error.light' : 'text.primary' }}>
+          {historyLabel(call, fromMe)}
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.625rem' }}>
+          {extractTime(message.createdAt)}
+        </Typography>
+        <Button
+          size="small"
+          disabled={busy || !selectedConversation}
+          onClick={() => startCall(
+            { _id: selectedConversation._id, fullName: selectedConversation.fullName, profilePic: selectedConversation.profilePic },
+            call.kind
+          )}
+          sx={{ minWidth: 0, px: 1.25, py: 0.25, fontSize: '0.75rem', borderRadius: 10, background: 'none' }}
+        >
+          Call back
+        </Button>
+      </Box>
+    </Box>
+  );
+};
+
 const Message = ({ message, onOpenImage }) => {
   const { authUser } = useAuthContext();
   const { selectedConversation } = useConversation();
   const fromMe = message.senderId === authUser._id;
+  if (message.call) return <CallHistoryMessage message={message} fromMe={fromMe} />;
   const formattedTime = extractTime(message.createdAt);
   const { image } = message;
 

@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import useConversation from "../../zustand/useConversations.js";
 import MessageInput from "./MessageInput";
 import Messages from "./Messages";
-import { FiMessageSquare, FiShield, FiArrowLeft, FiImage } from "react-icons/fi";
+import { FiMessageSquare, FiShield, FiArrowLeft, FiImage, FiPhone, FiVideo } from "react-icons/fi";
 import { useAuthContext } from "../../context/AuthContext";
-import { Box, Typography, Avatar, Button, CircularProgress, IconButton } from "@mui/material";
+import { Box, Typography, Avatar, Button, CircularProgress, IconButton, Tooltip } from "@mui/material";
 import { apiClient } from "../../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import { useSocketContext } from "../../context/SocketContext";
 import useImageDraft from "../../hooks/useImageDraft";
+import { startCall } from "../../calls/callEngine";
+import { useCallStore } from "../../calls/callStore";
 
 const MessageContainer = () => {
   const { selectedConversation, setSelectedConversation } = useConversation();
@@ -60,6 +62,25 @@ const MessageContainer = () => {
   const isPendingReceiver = selectedConversation?.requestStatus === 'pending' && selectedConversation?.requestSenderId !== authUser._id;
   const isPendingSender = selectedConversation?.requestStatus === 'pending' && selectedConversation?.requestSenderId === authUser._id;
   const canCompose = !!selectedConversation && !isPendingReceiver && !isPendingSender;
+
+  const inCall = useCallStore((s) => !!s.call && !['ended', 'failed', 'error'].includes(s.call.phase));
+  const callBlockedReason =
+    selectedConversation?.requestStatus !== 'accepted' ? 'You can call once your chat request is accepted'
+      : !isOnline ? `${selectedConversation?.fullName} is offline`
+        : inCall ? "You're already in a call"
+          : null;
+
+  const placeCall = (kind) => {
+    // Asking now, from a click, is the only time browsers allow the prompt.
+    // It lets a ringing call reach you when Talkify is in a background tab.
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+    startCall(
+      { _id: selectedConversation._id, fullName: selectedConversation.fullName, profilePic: selectedConversation.profilePic },
+      kind
+    );
+  };
 
   const hasFiles = (e) => [...(e.dataTransfer?.types ?? [])].includes('Files');
 
@@ -132,13 +153,32 @@ const MessageContainer = () => {
                 </Typography>
                 <Typography
                   variant="caption"
-                  color={isOnline ? 'success.main' : 'text.secondary'}
                   fontWeight={500}
-                  sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                  sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' }, color: isOnline ? 'success.main' : 'text.secondary' }}
                 >
                   {isOnline ? 'Online' : 'Offline'}
                 </Typography>
               </Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: { xs: 0.5, sm: 1 }, flexShrink: 0 }}>
+              {[
+                { kind: 'audio', label: 'Voice call', icon: <FiPhone size={20} /> },
+                { kind: 'video', label: 'Video call', icon: <FiVideo size={20} /> },
+              ].map(({ kind, label, icon }) => (
+                <Tooltip key={kind} title={callBlockedReason ?? label}>
+                  {/* span: a disabled button can't host a tooltip itself */}
+                  <span>
+                    <IconButton
+                      onClick={() => placeCall(kind)}
+                      disabled={!!callBlockedReason}
+                      aria-label={callBlockedReason ? `${label} (${callBlockedReason})` : label}
+                      sx={{ color: 'text.primary', minWidth: 44, minHeight: 44, '&:hover': { color: 'primary.light' } }}
+                    >
+                      {icon}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              ))}
             </Box>
           </Box>
 

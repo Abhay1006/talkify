@@ -4,6 +4,7 @@ import Login from "./pages/login/Login";
 import Signup from "./pages/signup/Signup";
 import { useAuthContext } from "./context/AuthContext";
 import { Box } from "@mui/material";
+import CallManager from "./components/calls/CallManager";
 
 function App() {
   const {authUser} = useAuthContext();
@@ -28,6 +29,7 @@ function App() {
         <Route path="/login" element={authUser ? <Navigate to='/' /> : <Login />} />
         <Route path="/signup" element={authUser ? <Navigate to='/' /> : <Signup />} />
       </Routes>
+      {authUser && <CallManager />}
     </Box>
   );
 }
