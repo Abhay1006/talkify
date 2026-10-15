@@ -16,6 +16,7 @@ Talkify is a web application hosted on Render that facilitates seamless and inte
 
 - **Real-Time Communication**: Users can chat and interact in real-time via WebSockets.
 - **User-Friendly Interface**: The application has an intuitive, premium glassmorphism interface.
+- **Image Messages**: Send JPEG, PNG, WebP or GIF images (up to 2 MB) by picking, pasting or dragging them in. Images are resized in the browser, stripped of location data on the server, and only visible to the two people in the chat.
 - **Mobile-Optimized & Responsive Design**: The website is fully responsive and optimized for mobile devices, featuring a native-like experience with safe area insets and touch-friendly interactions.
 
 ## Tech Stack

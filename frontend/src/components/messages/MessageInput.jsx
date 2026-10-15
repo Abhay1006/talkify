@@ -1,14 +1,45 @@
 import { useState, useRef, useEffect } from "react";
-import { FiSend, FiPlusCircle, FiSmile } from "react-icons/fi";
+import { FiSend, FiPlusCircle, FiSmile, FiX } from "react-icons/fi";
 import useSendMessage from "../../hooks/useSendMessages.js";
+import useSendImage from "../../hooks/useSendImage.js";
+import useImageDraft from "../../hooks/useImageDraft.js";
 import useConversation from "../../zustand/useConversations.js";
-import { Box, TextField, IconButton, CircularProgress, InputAdornment } from "@mui/material";
+import { ACCEPTED_IMAGE_TYPES, formatBytes } from "../../utils/prepareImage.js";
+import { Box, TextField, IconButton, CircularProgress, InputAdornment, Typography } from "@mui/material";
+
+const ImageDraftTray = ({ draft, onRemove }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1, p: 1, borderRadius: 3, bgcolor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+    <Box sx={{ position: 'relative', width: 56, height: 56, flexShrink: 0, borderRadius: 2, overflow: 'hidden', bgcolor: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {draft.status === 'ready' ? (
+        <Box component="img" src={draft.previewUrl} alt="Selected image" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <CircularProgress size={20} aria-label="Preparing image" />
+      )}
+    </Box>
+    <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Typography variant="body2" fontWeight={600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+        {draft.status === 'ready' ? 'Image ready' : 'Preparing image…'}
+      </Typography>
+      {draft.status === 'ready' && (
+        <Typography variant="caption" color="text.secondary">
+          {draft.width} × {draft.height} · {formatBytes(draft.blob.size)}
+        </Typography>
+      )}
+    </Box>
+    <IconButton onClick={onRemove} aria-label="Remove image" sx={{ color: 'text.secondary', minWidth: 40, minHeight: 40 }}>
+      <FiX size={18} />
+    </IconButton>
+  </Box>
+);
 
 const MessageInput = () => {
   const [message, setMessage] = useState("");
   const { loading, sendMessage } = useSendMessage();
-  const { selectedConversation } = useConversation();
+  const { sendImage } = useSendImage();
+  const { imageDraft, pickImage, clearImage } = useImageDraft();
+  const { selectedConversation, takeImageDraft } = useConversation();
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (selectedConversation && inputRef.current) {
@@ -20,26 +51,61 @@ const MessageInput = () => {
     }
   }, [selectedConversation]);
 
+  // A picked image belongs to the chat it was picked in.
+  useEffect(() => clearImage, [selectedConversation?._id, clearImage]);
+
+  const imageReady = imageDraft?.status === 'ready';
+  const canSend = imageReady || (!imageDraft && !!message.trim());
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!message) return;
-    await sendMessage(message);
-    setMessage("");
+    if (!canSend) return;
+
+    if (imageReady) {
+      sendImage(selectedConversation._id, takeImageDraft(), message.trim());
+      setMessage("");
+    } else {
+      await sendMessage(message);
+      setMessage("");
+    }
     // Re-focus input after sending on mobile
     if (inputRef.current) {
       inputRef.current.focus();
     }
   };
 
+  const handleFileChange = (e) => {
+    pickImage(e.target.files?.[0]);
+    // Reset so picking the same file again still fires onChange.
+    e.target.value = "";
+  };
+
+  const handlePaste = (e) => {
+    const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith("image/"));
+    if (file) {
+      e.preventDefault();
+      pickImage(file);
+    }
+  };
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ position: 'relative' }}>
+      {imageDraft && <ImageDraftTray draft={imageDraft} onRemove={clearImage} />}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_IMAGE_TYPES.join(",")}
+        onChange={handleFileChange}
+        hidden
+      />
       <TextField
         inputRef={inputRef}
         fullWidth
         variant="outlined"
-        placeholder="Type a message..."
+        placeholder={imageDraft ? "Add a caption..." : "Type a message..."}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        onPaste={handlePaste}
         size="small"
         sx={{
           bgcolor: 'rgba(255, 255, 255, 0.03)',
@@ -52,10 +118,15 @@ const MessageInput = () => {
             fontSize: { xs: '0.875rem', sm: '1rem' },
           },
         }}
-        InputProps={{
+        slotProps={{ input: {
           startAdornment: (
             <InputAdornment position="start">
-              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' }, minWidth: 40, minHeight: 40 }}>
+              <IconButton
+                size="small"
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Attach image"
+                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' }, minWidth: 40, minHeight: 40 }}
+              >
                 <FiPlusCircle size={20} />
               </IconButton>
             </InputAdornment>
@@ -66,18 +137,19 @@ const MessageInput = () => {
               <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: 'warning.main' }, mr: { xs: 0.5, sm: 1 }, display: { xs: 'none', sm: 'inline-flex' }, minWidth: 40, minHeight: 40 }}>
                 <FiSmile size={20} />
               </IconButton>
-              <IconButton 
+              <IconButton
                 type="submit"
-                disabled={loading || !message.trim()}
-                sx={{ 
-                  bgcolor: message.trim() ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
-                  color: message.trim() ? 'white' : 'text.secondary',
+                disabled={loading || !canSend}
+                aria-label={imageReady ? "Send image" : "Send message"}
+                sx={{
+                  bgcolor: canSend ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
+                  color: canSend ? 'white' : 'text.secondary',
                   borderRadius: 2,
                   width: { xs: 38, sm: 40 },
                   height: { xs: 38, sm: 40 },
                   minWidth: 38,
                   minHeight: 38,
-                  '&:hover': { bgcolor: message.trim() ? 'primary.dark' : 'rgba(255, 255, 255, 0.05)' },
+                  '&:hover': { bgcolor: canSend ? 'primary.dark' : 'rgba(255, 255, 255, 0.05)' },
                   '&.Mui-disabled': { bgcolor: 'rgba(255, 255, 255, 0.05)', color: 'text.disabled' }
                 }}
               >
@@ -85,7 +157,7 @@ const MessageInput = () => {
               </IconButton>
             </InputAdornment>
           ),
-        }}
+        } }}
       />
     </Box>
   );

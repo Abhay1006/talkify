@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useConversation from "../../zustand/useConversations.js";
 import MessageInput from "./MessageInput";
 import Messages from "./Messages";
-import { FiMessageSquare, FiShield, FiArrowLeft } from "react-icons/fi";
+import { FiMessageSquare, FiShield, FiArrowLeft, FiImage } from "react-icons/fi";
 import { useAuthContext } from "../../context/AuthContext";
 import { Box, Typography, Avatar, Button, CircularProgress, IconButton } from "@mui/material";
 import { apiClient } from "../../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import { useSocketContext } from "../../context/SocketContext";
+import useImageDraft from "../../hooks/useImageDraft";
 
 const MessageContainer = () => {
   const { selectedConversation, setSelectedConversation } = useConversation();
@@ -18,6 +19,11 @@ const MessageContainer = () => {
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
+  const { pickImage } = useImageDraft();
+  const [dragging, setDragging] = useState(false);
+  // dragenter/dragleave fire for every child element crossed; count them so
+  // the overlay doesn't flicker.
+  const dragDepth = useRef(0);
 
   useEffect(() => {
     return () => setSelectedConversation(null);
@@ -53,9 +59,43 @@ const MessageContainer = () => {
 
   const isPendingReceiver = selectedConversation?.requestStatus === 'pending' && selectedConversation?.requestSenderId !== authUser._id;
   const isPendingSender = selectedConversation?.requestStatus === 'pending' && selectedConversation?.requestSenderId === authUser._id;
+  const canCompose = !!selectedConversation && !isPendingReceiver && !isPendingSender;
+
+  const hasFiles = (e) => [...(e.dataTransfer?.types ?? [])].includes('Files');
+
+  const dropHandlers = canCompose ? {
+    onDragEnter: (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth.current += 1;
+      setDragging(true);
+    },
+    onDragOver: (e) => {
+      if (hasFiles(e)) e.preventDefault();
+    },
+    onDragLeave: (e) => {
+      if (!hasFiles(e)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setDragging(false);
+    },
+    onDrop: (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth.current = 0;
+      setDragging(false);
+      pickImage([...e.dataTransfer.files].find((f) => f.type.startsWith('image/')) ?? e.dataTransfer.files[0]);
+    },
+  } : {};
 
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'rgba(255, 255, 255, 0.01)', minWidth: 0 }}>
+    <Box {...dropHandlers} sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'rgba(255, 255, 255, 0.01)', minWidth: 0, position: 'relative' }}>
+      {dragging && (
+        <Box sx={{ position: 'absolute', inset: 8, zIndex: 10, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, borderRadius: 4, border: '2px dashed', borderColor: 'primary.main', bgcolor: 'rgba(11, 14, 26, 0.85)', color: 'text.primary' }}>
+          <FiImage size={32} />
+          <Typography variant="body1" fontWeight={600}>Drop an image to send</Typography>
+          <Typography variant="caption" color="text.secondary">JPEG, PNG, WebP or GIF</Typography>
+        </Box>
+      )}
       {!selectedConversation ? (
         <NoChatSelected />
       ) : (

@@ -69,13 +69,13 @@ const Login = () => {
               onBlur={formik.handleBlur}
               error={formik.touched.username && Boolean(formik.errors.username)}
               helperText={formik.touched.username && formik.errors.username}
-              InputProps={{
+              slotProps={{ input: {
                 startAdornment: (
                   <InputAdornment position="start">
                     <Person />
                   </InputAdornment>
                 ),
-              }}
+              } }}
             />
 
             <TextField
@@ -90,7 +90,7 @@ const Login = () => {
               onBlur={formik.handleBlur}
               error={formik.touched.password && Boolean(formik.errors.password)}
               helperText={formik.touched.password && formik.errors.password}
-              InputProps={{
+              slotProps={{ input: {
                 startAdornment: (
                   <InputAdornment position="start">
                     <Lock />
@@ -108,7 +108,7 @@ const Login = () => {
                     </IconButton>
                   </InputAdornment>
                 )
-              }}
+              } }}
             />
 
             <Box display="flex" justifyContent="flex-end">

@@ -101,9 +101,9 @@ const Signup = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.fullName && Boolean(formik.errors.fullName)}
                 helperText={formik.touched.fullName && formik.errors.fullName}
-                InputProps={{
+                slotProps={{ input: {
                   startAdornment: <InputAdornment position="start"><Edit /></InputAdornment>,
-                }}
+                } }}
               />
               <TextField
                 fullWidth
@@ -115,9 +115,9 @@ const Signup = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.username && Boolean(formik.errors.username)}
                 helperText={formik.touched.username && formik.errors.username}
-                InputProps={{
+                slotProps={{ input: {
                   startAdornment: <InputAdornment position="start"><Person /></InputAdornment>,
-                }}
+                } }}
               />
             </Box>
 
@@ -134,7 +134,7 @@ const Signup = () => {
                   onBlur={formik.handleBlur}
                   error={formik.touched.password && Boolean(formik.errors.password)}
                   helperText={formik.touched.password && formik.errors.password}
-                  InputProps={{
+                  slotProps={{ input: {
                     startAdornment: <InputAdornment position="start"><Lock /></InputAdornment>,
                     endAdornment: (
                       <InputAdornment position="end">
@@ -143,7 +143,7 @@ const Signup = () => {
                         </IconButton>
                       </InputAdornment>
                     )
-                  }}
+                  } }}
                 />
                 {formik.values.password && (
                   <Box sx={{ mt: 1 }}>
@@ -169,7 +169,7 @@ const Signup = () => {
                   onBlur={formik.handleBlur}
                   error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
                   helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
-                  InputProps={{
+                  slotProps={{ input: {
                     startAdornment: <InputAdornment position="start"><Lock /></InputAdornment>,
                     endAdornment: (
                       <InputAdornment position="end">
@@ -178,7 +178,7 @@ const Signup = () => {
                         </IconButton>
                       </InputAdornment>
                     )
-                  }}
+                  } }}
                 />
               </Box>
             </Box>

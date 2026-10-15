@@ -48,4 +48,28 @@ export const apiClient = {
     });
     return handleResponse(res);
   },
+  // multipart upload with progress. fetch() cannot report upload progress,
+  // so this one uses XMLHttpRequest.
+  upload: (url, formData, { onProgress } = {}) =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.responseType = 'json';
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+      };
+      xhr.onload = () => {
+        if (xhr.status === 401 && unauthorizedCallback) {
+          unauthorizedCallback();
+        }
+        const data = xhr.response;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(data?.error || 'Upload failed'));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Network error. Check your connection and try again.'));
+      xhr.send(formData);
+    }),
 };

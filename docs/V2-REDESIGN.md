@@ -1,6 +1,6 @@
 # Talkify v2 — Redesign & Feature Plan
 
-**Status:** Draft for approval · **Branch:** `v2-development` · **Written:** 2026-08-17
+**Status:** Phases 0 and 4 complete · **Branch:** `v2-development` · **Written:** 2026-08-17
 
 This document covers four things:
 
@@ -588,8 +588,29 @@ Token file, light + dark themes, theme toggle with pre-paint application, rewrit
 **Phase 3 — Messaging depth (Tier 1, §7)**
 Message model migration, pagination, typing indicators, receipts, reactions, replies, delete, last-message previews, real presence.
 
-**Phase 4 — Images (§6)**
-Upload pipeline, sharp processing, storage integration, authorized media route, gallery/lightbox viewer.
+**Phase 4 — Images (§6) — ✅ COMPLETE (2026-10-15)**
+
+| Item | § | Status |
+|---|---|---|
+| Client downscale (1600px, WebP q0.82, JPEG/PNG fallback), 2 MB cap | 6.1 | ✅ `frontend/src/utils/prepareImage.js` |
+| Attach button, paste from clipboard, drag-and-drop onto the chat | 6.1 | ✅ |
+| Optimistic bubble with progress ring, retry / discard on failure | 6.1 | ✅ |
+| multer memory storage, 2 MB / 1 file limits, upload rate limit | 6.2 | ✅ |
+| Type decided from the bytes, never from Content-Type or extension | 6.2 | ✅ libvips sniffing via `sharp().metadata()` — see note |
+| Re-encode everything through sharp: EXIF/GPS stripped, orientation applied, polyglots destroyed | 6.2 | ✅ verified |
+| Full (1600px) + thumbnail (400px) + inline placeholder | 6.2 | ✅ see note |
+| Animated GIFs stay animated (stored as animated WebP) | 6.2 | ✅ |
+| Decompression-bomb and processing-time limits | 6.2 | ✅ |
+| Storage adapter (`putObject` / `getObject` / `deleteObject`), GridFS first | 6.3, Decision 2 | ✅ `backend/storage/mediaStorage.js` |
+| `GET /api/media/:id` — participants only, blocked = gone, 404 to outsiders | 6.3 | ✅ verified |
+| Lightbox: full-screen, prev/next through the chat's images, keys + swipe, download | — | ✅ |
+
+**Notes on Phase 4:**
+- **Sniffing:** `file-type` was dropped in favour of the format libvips detects from the bytes while decoding. Same guarantee (content, not headers, decides), one dependency fewer, and current `file-type` needs Node 22+.
+- **Placeholder:** instead of a blurhash string, each message stores a ~16px WebP as a data URI (~100–300 bytes) shown blurred. Same effect, no client-side decoder.
+- **Orphans:** if saving the message fails, the stored files are deleted again.
+- **Fixed along the way:** MUI v9 removed `InputProps`/`PaperProps`, so the composer's send and attach buttons, the login/signup field icons and the password-visibility toggle were not rendering. All moved to `slotProps`.
+- **Node version:** `sharp` needs Node ≥ 20.9; pinned via `engines` in `package.json`.
 
 **Phase 5 — Calls (§8)**
 Signaling with authorization, WebRTC client, call UI, TURN setup, call history.

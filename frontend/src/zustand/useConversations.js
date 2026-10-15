@@ -32,6 +32,43 @@ const useConversation = create((set) => ({
         [userId]: (state.unreadMessages[userId] || 0) + 1,
       },
     })),
+
+  // The image waiting in the composer, before Send. Lives here rather than in
+  // MessageInput so drag-and-drop onto the whole chat can fill it too.
+  // { status: 'preparing' } | { status: 'ready', blob, previewUrl, width, height }
+  imageDraft: null,
+  setImageDraft: (imageDraft) =>
+    set((state) => {
+      const old = state.imageDraft?.previewUrl;
+      if (old && old !== imageDraft?.previewUrl) URL.revokeObjectURL(old);
+      return { imageDraft };
+    }),
+  // Hands the draft over to an upload without revoking its preview URL.
+  takeImageDraft: () => {
+    let draft = null;
+    set((state) => {
+      draft = state.imageDraft;
+      return { imageDraft: null };
+    });
+    return draft;
+  },
+
+  // Image messages still uploading (or failed), shown as optimistic bubbles.
+  // { tempId, receiverId, blob, previewUrl, width, height, caption,
+  //   progress, status: 'uploading' | 'failed', error }
+  pendingImages: [],
+  addPendingImage: (pending) =>
+    set((state) => ({ pendingImages: [...state.pendingImages, pending] })),
+  updatePendingImage: (tempId, patch) =>
+    set((state) => ({
+      pendingImages: state.pendingImages.map((p) => (p.tempId === tempId ? { ...p, ...patch } : p)),
+    })),
+  removePendingImage: (tempId) =>
+    set((state) => {
+      const pending = state.pendingImages.find((p) => p.tempId === tempId);
+      if (pending) URL.revokeObjectURL(pending.previewUrl);
+      return { pendingImages: state.pendingImages.filter((p) => p.tempId !== tempId) };
+    }),
 }));
 
 export default useConversation;

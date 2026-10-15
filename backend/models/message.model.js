@@ -18,9 +18,30 @@ const messageSchema = new mongoose.Schema(
     // `senderPublicKey`, but nothing in the app ever encrypted anything — the
     // field held plaintext under a name that claimed otherwise. Renamed so the
     // schema describes what it actually stores. See docs/V2-REDESIGN.md §3.2.
+    // Optional when the message carries an image (it is then the caption).
+    // A message must have a body, an image, or both — enforced below.
     body: {
       type: String,
-      required: true,
+    },
+
+    // Image attachment. The bytes live in media storage
+    // (backend/storage/mediaStorage.js) and are only readable through
+    // GET /api/media/:id, which checks the reader is in this conversation.
+    image: {
+      type: new mongoose.Schema(
+        {
+          fullId: { type: mongoose.Schema.Types.ObjectId, required: true },
+          thumbId: { type: mongoose.Schema.Types.ObjectId, required: true },
+          contentType: { type: String, required: true },
+          width: { type: Number, required: true },
+          height: { type: Number, required: true },
+          animated: { type: Boolean, default: false },
+          // Tiny inline data URI, shown blurred while the thumbnail loads.
+          placeholder: { type: String },
+        },
+        { _id: false }
+      ),
+      default: undefined,
     },
 
     // Legacy field, retained only so messages written before the rename remain
@@ -34,6 +55,14 @@ const messageSchema = new mongoose.Schema(
 );
 
 messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+
+messageSchema.pre("validate", function (next) {
+  const hasBody = typeof this.body === "string" && this.body.length > 0;
+  if (!hasBody && !this.image && this.ciphertext == null) {
+    this.invalidate("body", "A message needs text or an image");
+  }
+  next();
+});
 
 // Old documents have `ciphertext` and no `body`. Fall back so a partially
 // migrated database still renders every message correctly.

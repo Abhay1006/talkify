@@ -44,7 +44,7 @@ const SearchInput = () => {
         onChange={(e) => setSearch(e.target.value)}
         size="small"
         disabled={loading}
-        InputProps={{
+        slotProps={{ input: {
           startAdornment: (
             <InputAdornment position="start">
               <FiSearch size={18} />
@@ -57,7 +57,7 @@ const SearchInput = () => {
             '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
             '&.Mui-focused': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
           }
-        }}
+        } }}
       />
     </Box>
   );

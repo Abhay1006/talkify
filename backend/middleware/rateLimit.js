@@ -20,11 +20,20 @@ export const authLimiter = rateLimit({
   message: { error: "Too many attempts. Please try again in a few minutes." },
 });
 
-// Broad backstop for everything under /api.
+// Broad backstop for everything under /api. Media reads have their own budget
+// below: a chat full of images would otherwise burn through this one.
 export const apiLimiter = rateLimit({
   ...baseOptions,
   windowMs: 60 * 1000,
   limit: 300,
+  skip: (req) => req.method === "GET" && req.path.startsWith("/media/"),
+});
+
+// Image reads. Browser caching keeps repeat views off this budget.
+export const mediaLimiter = rateLimit({
+  ...baseOptions,
+  windowMs: 60 * 1000,
+  limit: 600,
 });
 
 // Search hits a regex query, so it gets a tighter budget than general reads.
@@ -40,4 +49,13 @@ export const messageLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 60,
   message: { error: "You are sending messages too quickly." },
+});
+
+// Image uploads cost a decode and two re-encodes each, so they get a much
+// tighter budget than text messages (which they also count against).
+export const uploadLimiter = rateLimit({
+  ...baseOptions,
+  windowMs: 60 * 1000,
+  limit: 15,
+  message: { error: "You are sending images too quickly." },
 });

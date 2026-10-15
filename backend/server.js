@@ -13,8 +13,9 @@ import messageRoutes from "./routes/message.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import chatRequestRoutes from "./routes/chatRequest.routes.js";
 import blockRoutes from "./routes/block.routes.js";
+import mediaRoutes from "./routes/media.routes.js";
 import connectToMongoDB from "./db/connectToMongoDB.js";
-import { authLimiter, apiLimiter, searchLimiter } from "./middleware/rateLimit.js";
+import { authLimiter, apiLimiter, mediaLimiter, searchLimiter } from "./middleware/rateLimit.js";
 import { app, server } from "./socket/socket.js";
 
 const port = process.env.PORT || 5001;
@@ -49,8 +50,8 @@ app.use(
   })
 );
 
-// Deliberately small. Binary uploads will go through multipart in a later
-// phase rather than being inflated into JSON.
+// Deliberately small. Image uploads go through multipart (multer) on their own
+// route rather than being inflated ~33% into base64 JSON.
 app.use(express.json({ limit: "64kb" }));
 app.use(express.urlencoded({ extended: true, limit: "64kb" }));
 app.use(cookieParser());
@@ -62,6 +63,7 @@ app.use("/api/users/search", searchLimiter);
 app.use("/api/users", userRoutes);
 app.use("/api/chat-requests", chatRequestRoutes);
 app.use("/api/block", blockRoutes);
+app.use("/api/media", mediaLimiter, mediaRoutes);
 
 // Registered before the SPA catch-all so an unmatched API route returns JSON.
 // Previously it fell through to index.html and the client threw an opaque
