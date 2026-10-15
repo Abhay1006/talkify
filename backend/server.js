@@ -15,6 +15,7 @@ import chatRequestRoutes from "./routes/chatRequest.routes.js";
 import blockRoutes from "./routes/block.routes.js";
 import mediaRoutes from "./routes/media.routes.js";
 import callRoutes from "./routes/call.routes.js";
+import pushRoutes from "./routes/push.routes.js";
 import connectToMongoDB from "./db/connectToMongoDB.js";
 import { authLimiter, apiLimiter, mediaLimiter, searchLimiter } from "./middleware/rateLimit.js";
 import { app, server } from "./socket/socket.js";
@@ -66,6 +67,7 @@ app.use("/api/chat-requests", chatRequestRoutes);
 app.use("/api/block", blockRoutes);
 app.use("/api/media", mediaLimiter, mediaRoutes);
 app.use("/api/calls", callRoutes);
+app.use("/api/push", pushRoutes);
 
 // Registered before the SPA catch-all so an unmatched API route returns JSON.
 // Previously it fell through to index.html and the client threw an opaque

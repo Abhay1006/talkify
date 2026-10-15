@@ -59,7 +59,8 @@ export const getObject = async (id) => {
     length: file.length,
     contentType: file.metadata?.contentType ?? "application/octet-stream",
     metadata: file.metadata ?? {},
-    openStream: () => getBucket().openDownloadStream(_id),
+    // { start, end } (end exclusive) streams just that byte range.
+    openStream: (range) => getBucket().openDownloadStream(_id, range),
   };
 };
 

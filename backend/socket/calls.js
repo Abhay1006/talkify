@@ -5,6 +5,7 @@ import ChatRequest from "../models/chatRequest.model.js";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { checkCanMessage } from "../utils/messagePermissions.js";
+import { notifyUser } from "../utils/push.js";
 
 // 1:1 voice/video call signaling. Media goes peer-to-peer over WebRTC; this
 // module only brokers the handshake and keeps the authoritative call state.
@@ -207,6 +208,21 @@ const handlers = {
     if (callIdByUser.has(calleeId) || calleeSockets.length === 0) {
       // Not a live call, but the callee should still see that someone tried.
       logHistory(call, "missed");
+      if (calleeSockets.length === 0) {
+        const caller = await User.findById(callerId).select("fullName").lean();
+        notifyUser(
+          calleeId,
+          {
+            type: "call",
+            title: caller?.fullName ?? "Talkify",
+            body: `Missed ${kind === "video" ? "video" : "voice"} call`,
+            tag: `call-${callerId}`,
+            url: `/?chat=${callerId}`,
+            urgency: "high",
+          },
+          { fromUserId: callerId }
+        );
+      }
       return { ok: false, reason: calleeSockets.length === 0 ? "unavailable" : "busy" };
     }
 

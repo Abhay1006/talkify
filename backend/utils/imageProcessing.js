@@ -115,3 +115,31 @@ export const processImage = async (input) => {
     placeholder: `data:image/webp;base64,${placeholder.toString("base64")}`,
   };
 };
+
+const AVATAR_EDGE = 256;
+
+/**
+ * Profile pictures: same checks and re-encode as message images (so EXIF and
+ * GPS are stripped too), cropped to a 256px square, first frame only.
+ */
+export const processAvatar = async (input) => {
+  let meta;
+  try {
+    meta = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS }).metadata();
+  } catch {
+    throw new ImageRejectedError("That file isn't a supported image");
+  }
+  if (!ACCEPTED_FORMATS.has(meta.format)) {
+    throw new ImageRejectedError("Only JPEG, PNG, WebP and GIF images are supported");
+  }
+  try {
+    return await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+      .timeout({ seconds: PROCESSING_TIMEOUT_SECONDS })
+      .rotate()
+      .resize(AVATAR_EDGE, AVATAR_EDGE, { fit: "cover", position: "attention" })
+      .webp({ quality: 80 })
+      .toBuffer();
+  } catch {
+    throw new ImageRejectedError("That image couldn't be processed");
+  }
+};

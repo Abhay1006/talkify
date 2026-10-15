@@ -58,6 +58,42 @@ const messageSchema = new mongoose.Schema(
       default: undefined,
     },
 
+    // Voice note. Bytes in media storage, like images; served with Range
+    // support so Safari can play them.
+    voice: {
+      type: new mongoose.Schema(
+        {
+          mediaId: { type: mongoose.Schema.Types.ObjectId, required: true },
+          contentType: { type: String, required: true },
+          durationMs: { type: Number, required: true },
+          // 0..1 peak levels for drawing the waveform. Supplied by the
+          // recording client; cosmetic only.
+          waveform: { type: [Number], default: [] },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
+
+    // Set when the sender edits the text. Shown as "edited".
+    editedAt: { type: Date },
+
+    // Title/description card for the first link in the message, fetched by
+    // the server (backend/utils/linkPreview.js). Text only: preview images
+    // would mean hotlinking (leaking readers' IPs) or proxying arbitrary URLs.
+    linkPreview: {
+      type: new mongoose.Schema(
+        {
+          url: { type: String, required: true },
+          title: { type: String },
+          description: { type: String },
+          siteName: { type: String },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
+
     // Legacy field, retained only so messages written before the rename remain
     // readable until scripts/migrate-message-body.js has run. Never written to.
     ciphertext: {
@@ -72,8 +108,8 @@ messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
 
 messageSchema.pre("validate", function (next) {
   const hasBody = typeof this.body === "string" && this.body.length > 0;
-  if (!hasBody && !this.image && !this.call && this.ciphertext == null) {
-    this.invalidate("body", "A message needs text, an image or a call");
+  if (!hasBody && !this.image && !this.call && !this.voice && this.ciphertext == null) {
+    this.invalidate("body", "A message needs text, an image, a voice note or a call");
   }
   next();
 });
