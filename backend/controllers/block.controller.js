@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import BlockList from "../models/blockList.model.js";
 import Conversation from "../models/conversation.model.js";
+import { endCallsBetween } from "../socket/calls.js";
 
 export const blockUser = async (req, res) => {
   try {
@@ -25,6 +26,9 @@ export const blockUser = async (req, res) => {
     if (result.upsertedCount === 0) {
       return res.status(400).json({ error: "User is already blocked" });
     }
+
+    // Blocking someone mid-call hangs up immediately.
+    endCallsBetween(userId, blockedUserId);
 
     const conversation = await Conversation.findOne({
       participants: { $all: [userId, blockedUserId] }

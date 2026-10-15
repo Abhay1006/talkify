@@ -44,6 +44,20 @@ const messageSchema = new mongoose.Schema(
       default: undefined,
     },
 
+    // Call history line ("Voice call · 2:31", "Missed video call"). Written
+    // only by the server (backend/socket/calls.js), never from client input.
+    call: {
+      type: new mongoose.Schema(
+        {
+          kind: { type: String, enum: ["audio", "video"], required: true },
+          status: { type: String, enum: ["completed", "missed", "declined"], required: true },
+          durationMs: { type: Number, default: 0 },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
+
     // Legacy field, retained only so messages written before the rename remain
     // readable until scripts/migrate-message-body.js has run. Never written to.
     ciphertext: {
@@ -58,8 +72,8 @@ messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
 
 messageSchema.pre("validate", function (next) {
   const hasBody = typeof this.body === "string" && this.body.length > 0;
-  if (!hasBody && !this.image && this.ciphertext == null) {
-    this.invalidate("body", "A message needs text or an image");
+  if (!hasBody && !this.image && !this.call && this.ciphertext == null) {
+    this.invalidate("body", "A message needs text, an image or a call");
   }
   next();
 });

@@ -3,6 +3,7 @@ import http from "http";
 import express from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
+import { initCalls, registerCallHandlers, handleCallSocketDisconnect } from "./calls.js";
 
 // Minimal Cookie-header parser. Socket.IO hands us the raw header and
 // cookie-parser only runs on Express requests, so we read the one cookie we
@@ -92,6 +93,8 @@ export const emitToUser = (userId, event, payload) => {
   }
 };
 
+initCalls({ io, getSocketIds: getReceiverSocketIds });
+
 const broadcastOnlineUsers = () => {
   io.emit("getOnlineUsers", [...userSockets.keys()]);
 };
@@ -103,8 +106,11 @@ io.on("connection", (socket) => {
   userSockets.get(userId).add(socket.id);
 
   broadcastOnlineUsers();
+  registerCallHandlers(socket);
 
   socket.on("disconnect", () => {
+    handleCallSocketDisconnect(socket);
+
     const sockets = userSockets.get(userId);
     if (!sockets) return;
 
