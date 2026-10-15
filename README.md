@@ -16,7 +16,12 @@ Talkify is a web application hosted on Render that facilitates seamless and inte
 
 - **Real-Time Communication**: Users can chat and interact in real-time via WebSockets.
 - **User-Friendly Interface**: The application has an intuitive, premium glassmorphism interface.
+- **Voice & Video Calls**: 1:1 calls straight between browsers (WebRTC), with camera switching, mute, reconnection after network drops, and call history in the chat.
+- **Voice Messages**: Record and send voice notes with a waveform player.
 - **Image Messages**: Send JPEG, PNG, WebP or GIF images (up to 2 MB) by picking, pasting or dragging them in. Images are resized in the browser, stripped of location data on the server, and only visible to the two people in the chat.
+- **Installable App & Notifications**: Install Talkify to your home screen or desktop, and get push notifications for messages and missed calls.
+- **Profiles**: Edit your name, bio and photo, and share a QR code that opens a chat with you.
+- **Chat Tools**: Edit messages, link previews, and pin, mute or archive conversations.
 - **Mobile-Optimized & Responsive Design**: The website is fully responsive and optimized for mobile devices, featuring a native-like experience with safe area insets and touch-friendly interactions.
 
 ## Tech Stack
@@ -37,7 +42,7 @@ Talkify is a web application hosted on Render that facilitates seamless and inte
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/talkify.git
+    git clone https://github.com/Abhay1006/talkify.git
     cd talkify
     ```
 
@@ -47,17 +52,34 @@ Talkify is a web application hosted on Render that facilitates seamless and inte
     ```
 
 3. **Set up environment variables**:
-    Create a `.env` file in the root directory and add the following:
+    Create a `.env` file in the root directory:
     ```
-    DATABASE_URL=your_mongodb_connection_string
-    JWT_SECRET=your_jwt_secret_key
+    MONGO_DB_URI=your_mongodb_connection_string
+    JWT_SECRET=a_long_random_secret
+
+    # Optional: push notifications. Generate once with
+    #   npx web-push generate-vapid-keys
+    # and keep them stable (changing them breaks existing subscriptions).
+    VAPID_PUBLIC_KEY=
+    VAPID_PRIVATE_KEY=
+    VAPID_SUBJECT=mailto:you@example.com
+
+    # Optional: a TURN relay for calls on restrictive networks (JSON array of
+    # RTCIceServer objects). Defaults to Google's public STUN servers.
+    # ICE_SERVERS=[{"urls":"turn:turn.example.com:3478","username":"u","credential":"p"}]
     ```
 
 4. **Run the application**:
     ```bash
+    npm run build   # installs everything and builds the frontend
     npm start
     ```
-    The application will run at `http://localhost:3000`.
+    The application runs at `http://localhost:5001`. For frontend development, run `npm run server` and `npm run dev --prefix frontend`, then open `http://localhost:3000`.
+
+5. **Run the tests** (needs a MongoDB at `mongodb://127.0.0.1:27017`, or set `TEST_MONGO_URI`):
+    ```bash
+    npm test
+    ```
 
 ## Usage
 
