@@ -1,20 +1,25 @@
 {
-  "name": "chat-app",
+  "name": "talkify",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "server": "nodemon backend/server.js",
-    "start": "node backend/server.js",
-    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend"
-  },
+  "private": true,
+  "description": "Real-time chat app: Express, Socket.IO and MongoDB backend with a React frontend.",
   "type": "module",
-  "keywords": [],
-  "author": "",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node backend/server.js",
+    "server": "nodemon backend/server.js",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run server\" \"npm run dev --prefix frontend\"",
+    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend",
+    "lint": "eslint backend --max-warnings 0 && npm run lint --prefix frontend",
+    "format": "prettier --write backend frontend/src",
+    "format:check": "prettier --check backend frontend/src",
+    "test": "node --test --test-concurrency=1 \"backend/tests/*.test.js\""
+  },
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "chat-app": "file:",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -25,6 +30,10 @@
     "socket.io": "^4.7.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "concurrently": "^10.0.5",
+    "eslint": "^8.57.1",
+    "nodemon": "^3.1.4",
+    "prettier": "^3.9.9",
+    "supertest": "^7.3.0"
   }
 }
