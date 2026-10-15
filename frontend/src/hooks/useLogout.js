@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useAuthContext } from '../context/AuthContext';
 import { apiClient } from '../api/client';
+import { unsubscribeThisDevice } from './usePushNotifications';
 
 const useLogout = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -9,7 +10,11 @@ const useLogout = () => {
   const queryClient = useQueryClient();
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: () => apiClient.post('/api/auth/logout', {}),
+    // A shared computer shouldn't keep getting this user's notifications.
+    mutationFn: async () => {
+      await unsubscribeThisDevice();
+      return apiClient.post('/api/auth/logout', {});
+    },
     onSuccess: () => {
       localStorage.removeItem('chat-user');
       setAuthUser(null);

@@ -25,7 +25,7 @@ const IncomingCall = ({ call }) => {
         paper: {
           role: "alertdialog",
           "aria-label": `Incoming ${kind === "video" ? "video" : "voice"} call from ${peer.fullName}`,
-          sx: { bgcolor: "#12152a", backdropFilter: "none", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", p: { xs: 3, sm: 4 }, width: 340, maxWidth: "calc(100% - 32px)" },
+          sx: { bgcolor: "#12152a", backdropFilter: "none", backgroundImage: "none", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", p: { xs: 3, sm: 4 }, width: 340, maxWidth: "calc(100% - 32px)" },
         },
       }}
     >

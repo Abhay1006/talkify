@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { registerUnauthorizedCallback } from "../api/client";
 
 export const AuthContext = createContext();
@@ -23,8 +23,18 @@ export const AuthContextProvider = ({ children }) => {
     };
   }, []);
 
+  // Merges profile changes into the stored user (name, avatar, bio).
+  const updateAuthUser = useCallback((patch) => {
+    setAuthUser((current) => {
+      if (!current) return current;
+      const next = { ...current, ...patch };
+      localStorage.setItem("chat-user", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ authUser, setAuthUser }}>
+    <AuthContext.Provider value={{ authUser, setAuthUser, updateAuthUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -24,6 +24,16 @@ const useConversation = create((set) => ({
         : { messages: [...state.messages, message] }
     ),
 
+  // An edit, or a link preview arriving after the fact.
+  updateMessage: (message) =>
+    set((state) => ({
+      messages: state.messages.map((m) => (m._id === message._id ? message : m)),
+    })),
+
+  // The message being edited in the composer, if any.
+  editingMessage: null,
+  setEditingMessage: (editingMessage) => set({ editingMessage }),
+
   unreadMessages: {},
   addUnreadMessage: (userId) =>
     set((state) => ({

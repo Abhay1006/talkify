@@ -4,8 +4,12 @@ import useConversation from "../../zustand/useConversations.js";
 import { mediaUrl } from "../../utils/prepareImage";
 import { imageSrcSet } from "../../utils/messageImage";
 import MessageImage from "./MessageImage";
-import { Box, Typography, Avatar, Button, CircularProgress } from "@mui/material";
-import { FiAlertCircle, FiPhone, FiPhoneMissed, FiVideo } from "react-icons/fi";
+import { useRef, useState } from "react";
+import { Box, Typography, Avatar, Button, CircularProgress, IconButton, Menu, MenuItem, ListItemIcon } from "@mui/material";
+import { FiAlertCircle, FiPhone, FiPhoneMissed, FiVideo, FiMoreHorizontal, FiEdit2, FiCopy } from "react-icons/fi";
+import { useSnackbar } from "notistack";
+import { LinkifiedText, LinkPreviewCard } from "./MessageText";
+import VoiceMessage from "./VoiceMessage";
 import { historyLabel } from "../../calls/callText";
 import { startCall } from "../../calls/callEngine";
 import { useCallStore } from "../../calls/callStore";
@@ -33,8 +37,8 @@ const bubbleSx = (fromMe, hasImage) => ({
 
 const captionSx = { px: { xs: 1.5, sm: 2 }, pt: 0.75, pb: 0.5 };
 
-const MessageRow = ({ fromMe, profilePic, bubble, footer }) => (
-  <Box sx={{ display: 'flex', width: '100%', mb: { xs: 1.5, sm: 3 }, justifyContent: fromMe ? 'flex-end' : 'flex-start' }}>
+const MessageRow = ({ fromMe, profilePic, bubble, footer, actions, rowProps }) => (
+  <Box {...rowProps} sx={{ display: 'flex', width: '100%', mb: { xs: 1.5, sm: 3 }, justifyContent: fromMe ? 'flex-end' : 'flex-start', '&:hover .message-actions, & .message-actions:focus-visible, & .message-actions[aria-expanded="true"]': { opacity: 1 } }}>
     <Box sx={{ display: 'flex', maxWidth: { xs: '85%', sm: '80%' }, flexDirection: fromMe ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: { xs: 0.5, sm: 1 } }}>
 
       {/* Avatar — hidden on mobile for cleaner look */}
@@ -46,9 +50,94 @@ const MessageRow = ({ fromMe, profilePic, bubble, footer }) => (
         {bubble}
         {footer}
       </Box>
+      {actions}
     </Box>
   </Box>
 );
+
+const EDIT_WINDOW_MS = 15 * 60 * 1000;
+const LONG_PRESS_MS = 500;
+
+// Copy / Edit. Opens from the ⋯ button (shown on hover) or a long press.
+const useMessageMenu = (message, fromMe) => {
+  const { setEditingMessage } = useConversation();
+  const { enqueueSnackbar } = useSnackbar();
+  const [anchor, setAnchor] = useState(null);
+  const buttonRef = useRef(null);
+  const pressTimer = useRef(null);
+
+  const canEdit = fromMe && !message.voice && !message.call && Date.now() - new Date(message.createdAt).getTime() < EDIT_WINDOW_MS;
+  const canCopy = !!message.body;
+  const hasActions = canEdit || canCopy;
+
+  const close = () => setAnchor(null);
+  const items = [];
+  if (canCopy) {
+    items.push(
+      <MenuItem key="copy" onClick={async () => {
+        close();
+        try {
+          await navigator.clipboard.writeText(message.body);
+          enqueueSnackbar('Copied', { variant: 'success', autoHideDuration: 1500 });
+        } catch {
+          enqueueSnackbar("Couldn't copy", { variant: 'warning' });
+        }
+      }}>
+        <ListItemIcon><FiCopy /></ListItemIcon>Copy text
+      </MenuItem>
+    );
+  }
+  if (canEdit) {
+    items.push(
+      <MenuItem key="edit" onClick={() => { close(); setEditingMessage(message); }}>
+        <ListItemIcon><FiEdit2 /></ListItemIcon>Edit
+      </MenuItem>
+    );
+  }
+
+  const rowProps = hasActions ? {
+    onContextMenu: (e) => {
+      // Right-click on desktop, long-press on most phones.
+      if (window.getSelection()?.toString()) return;
+      e.preventDefault();
+      setAnchor(buttonRef.current);
+    },
+    onTouchStart: () => {
+      pressTimer.current = setTimeout(() => setAnchor(buttonRef.current), LONG_PRESS_MS);
+    },
+    onTouchEnd: () => clearTimeout(pressTimer.current),
+    onTouchMove: () => clearTimeout(pressTimer.current),
+  } : undefined;
+
+  const actions = hasActions ? (
+    <>
+      <IconButton
+        ref={buttonRef}
+        className="message-actions"
+        size="small"
+        aria-label="Message options"
+        aria-haspopup="menu"
+        aria-expanded={anchor ? 'true' : 'false'}
+        onClick={(e) => setAnchor(e.currentTarget)}
+        sx={{ alignSelf: 'center', opacity: { xs: 0, md: 0 }, transition: 'opacity 120ms', color: 'text.secondary', width: 32, height: 32, '@media (hover: none)': { width: 0, overflow: 'hidden', p: 0 } }}
+      >
+        <FiMoreHorizontal size={16} />
+      </IconButton>
+      <Menu
+        anchorEl={anchor}
+        open={!!anchor}
+        onClose={close}
+        anchorOrigin={{ vertical: 'top', horizontal: fromMe ? 'left' : 'right' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: fromMe ? 'right' : 'left' }}
+        slotProps={{ paper: { sx: { bgcolor: '#1a1d33', backdropFilter: 'none', backgroundImage: 'none', borderRadius: '12px', minWidth: 160 } } }}
+      >
+        {items}
+      </Menu>
+    </>
+  ) : null;
+
+  return { actions, rowProps };
+};
 
 const footerSx = { mt: 0.5, px: 0.5, color: 'text.secondary', fontSize: { xs: '0.55rem', sm: '0.625rem' }, fontWeight: 500, textTransform: 'uppercase' };
 
@@ -89,13 +178,20 @@ const CallHistoryMessage = ({ message, fromMe }) => {
   );
 };
 
-const Message = ({ message, onOpenImage }) => {
+const Message = (props) => {
   const { authUser } = useAuthContext();
-  const { selectedConversation } = useConversation();
-  const fromMe = message.senderId === authUser._id;
-  if (message.call) return <CallHistoryMessage message={message} fromMe={fromMe} />;
+  const fromMe = props.message.senderId === authUser._id;
+  if (props.message.call) return <CallHistoryMessage message={props.message} fromMe={fromMe} />;
+  return <ChatMessage {...props} fromMe={fromMe} />;
+};
+
+const ChatMessage = ({ message, onOpenImage, fromMe }) => {
+  const { authUser } = useAuthContext();
+  const { selectedConversation, editingMessage } = useConversation();
+  const { actions, rowProps } = useMessageMenu(message, fromMe);
   const formattedTime = extractTime(message.createdAt);
-  const { image } = message;
+  const { image, voice, linkPreview } = message;
+  const beingEdited = editingMessage?._id === message._id;
 
   const profilePic = fromMe
     ? authUser.profilePic
@@ -105,8 +201,10 @@ const Message = ({ message, onOpenImage }) => {
     <MessageRow
       fromMe={fromMe}
       profilePic={profilePic}
+      actions={actions}
+      rowProps={rowProps}
       bubble={
-        <Box sx={bubbleSx(fromMe, !!image)}>
+        <Box sx={{ ...bubbleSx(fromMe, !!image), ...(beingEdited && { outline: '2px solid', outlineColor: 'warning.main', outlineOffset: 2 }) }}>
           {image && (
             <MessageImage
               src={mediaUrl(image.thumbId)}
@@ -118,12 +216,19 @@ const Message = ({ message, onOpenImage }) => {
               onClick={onOpenImage ? () => onOpenImage(message._id) : undefined}
             />
           )}
-          {message.body && <Box sx={image ? captionSx : undefined}>{message.body}</Box>}
+          {voice && <VoiceMessage voice={voice} fromMe={fromMe} />}
+          {message.body && (
+            <Box sx={image ? captionSx : undefined}>
+              <LinkifiedText text={message.body} fromMe={fromMe} />
+              {linkPreview && <LinkPreviewCard preview={linkPreview} fromMe={fromMe} />}
+            </Box>
+          )}
         </Box>
       }
       footer={
         <Typography variant="caption" sx={footerSx}>
           {formattedTime}
+          {message.editedAt && <Box component="span" sx={{ textTransform: 'none', ml: 0.5 }}>· edited</Box>}
         </Typography>
       }
     />

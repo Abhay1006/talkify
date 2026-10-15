@@ -42,6 +42,14 @@ export const apiClient = {
     });
     return handleResponse(res);
   },
+  request: async (method, url, body) => {
+    const res = await fetch(url, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return handleResponse(res);
+  },
   delete: async (url) => {
     const res = await fetch(url, {
       method: 'DELETE',

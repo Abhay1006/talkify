@@ -2,9 +2,11 @@ import { Box } from "@mui/material";
 import MessageContainer from "../../components/messages/MessageContainer";
 import Sidebar from "../../components/sidebar/Sidebar";
 import useConversation from "../../zustand/useConversations.js";
+import useDeepLinks from "../../hooks/useDeepLinks";
 
 const Home = () => {
   const { selectedConversation } = useConversation();
+  useDeepLinks();
 
   return (
     <Box sx={{
