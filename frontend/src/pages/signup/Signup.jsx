@@ -10,17 +10,23 @@ const initial = {
   gender: "male",
 };
 
+// Mirrors USERNAME_PATTERN in backend/controllers/auth.controller.js.
+const USERNAME_PATTERN = /^[a-z0-9_.]{3,20}$/;
+
 // Mirrors what the API enforces, so a bad form never costs a round trip.
 const validate = ({ fullName, username, password, confirmPassword }) => {
   if (!fullName.trim()) return "Full name is required.";
-  if (!username.trim()) return "Username is required.";
+  if (fullName.trim().length > 50) return "Full name cannot exceed 50 characters.";
+  if (!USERNAME_PATTERN.test(username.trim().toLowerCase()))
+    return "Username: 3-20 characters, lowercase letters, numbers, dots and underscores.";
   if (password.length < 6) return "Password must be at least 6 characters.";
+  if (password.length > 72) return "Password cannot exceed 72 characters.";
   if (password !== confirmPassword) return "Passwords do not match.";
   return "";
 };
 
 const Signup = () => {
-  const [loading, signup] = useSignup();
+  const { loading, signup } = useSignup();
   const [values, setValues] = useState(initial);
   const [error, setError] = useState("");
 

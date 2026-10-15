@@ -1,29 +1,36 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '../context/ToastContext';
-import useConversation from '../zustand/useConversations';
-import { apiClient } from '../api/client';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../context/ToastContext";
+import { apiClient } from "../api/client";
+import { conversationsQueryKey } from "../queries/conversations";
+import { appendMessageToCache } from "../queries/messages";
 
-const useSendMessage = () => {
+const useSendMessage = (receiverId) => {
   const { toast } = useToast();
-  const { appendMessage, selectedConversation } = useConversation();
   const queryClient = useQueryClient();
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (message) => apiClient.post(`/api/messages/send/${selectedConversation._id}`, { message }),
+    mutationFn: (message) =>
+      apiClient.post(`/api/messages/send/${encodeURIComponent(receiverId)}`, { message }),
     onSuccess: (data) => {
-      appendMessage(data);
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      appendMessageToCache(queryClient, receiverId, data);
+      queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
     },
     onError: (error) => {
-      toast(error.message, 'error');
+      toast(error.message, "error");
+      // A 403 usually means the request state changed underneath us (declined,
+      // blocked, not yet accepted). Refresh so the UI shows the real state.
+      if (error.status === 403) queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
     },
   });
 
+  // Resolves to true when the message was sent, so the caller only clears the
+  // input on success and a failed send never loses what the user typed.
   const sendMessage = async (message) => {
     try {
       await mutateAsync(message);
-    } catch (error) {
-      // Error handled in onError
+      return true;
+    } catch {
+      return false;
     }
   };
 

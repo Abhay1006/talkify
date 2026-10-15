@@ -13,6 +13,8 @@ const useGlobalShortcuts = () => {
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // An open dialog (profile, image viewer, call) owns the keyboard.
+      if (document.querySelector("dialog[open]")) return;
 
       if (e.key === "/" && !isTyping(e.target)) {
         const search = document.getElementById("sidebar-search");

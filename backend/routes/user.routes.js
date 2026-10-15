@@ -1,11 +1,25 @@
-import e from "express";
+import express from "express";
 import protectRoute from "../middleware/protectRoute.js";
-import { getAcceptedContacts, searchUsers, updateKeys } from "../controllers/user.controller.js";
+import { searchLimiter, uploadLimiter } from "../middleware/rateLimit.js";
+import { uploadImage } from "../middleware/upload.js";
+import {
+  getContacts,
+  searchUsers,
+  updateMe,
+  updateAvatar,
+  updateConversationPrefs,
+} from "../controllers/user.controller.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
-const router=e.Router();
+const router = express.Router();
 
-router.get("/",protectRoute,getAcceptedContacts);
-router.get("/search",protectRoute,searchUsers);
-router.put("/keys",protectRoute,updateKeys);
+router.use(protectRoute);
+
+router.get("/", asyncHandler(getContacts));
+router.get("/search", searchLimiter, asyncHandler(searchUsers));
+// The current profile is GET /api/auth/me.
+router.put("/me", asyncHandler(updateMe));
+router.post("/me/avatar", uploadLimiter, uploadImage, asyncHandler(updateAvatar));
+router.put("/prefs/:partnerId", asyncHandler(updateConversationPrefs));
 
 export default router;

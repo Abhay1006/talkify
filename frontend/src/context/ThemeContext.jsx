@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 const STORAGE_KEY = "talkify-theme";
 const ThemeContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => useContext(ThemeContext);
 
 // `null` means "follow the system", which is also the default. The stylesheet
@@ -13,8 +14,7 @@ const stored = () => {
   return value === "light" || value === "dark" ? value : null;
 };
 
-const systemPrefersDark = () =>
-  window.matchMedia("(prefers-color-scheme: dark)").matches;
+const systemPrefersDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(stored);

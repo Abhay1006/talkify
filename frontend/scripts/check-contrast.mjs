@@ -59,13 +59,19 @@ const PAIRS = [
   ["--accent-text", "--accent", "primary button label"],
   ["--ok", "--bg", "online text"],
   ["--ok", "--bg-chrome", "online in chat header"],
-  ["--danger", "--bg", "field errors"],
+  ["--danger", "--bg", "field errors, missed calls"],
+  ["--warn", "--bg-chrome", "topbar connection status"],
+  ["--text-faint", "--bg-sunken", "link preview site name"],
+  ["--text-muted", "--bg-mine", "message being edited"],
 ];
 
 const AA = 4.5;
 let failed = 0;
 
-for (const [name, tokens] of [["light", light], ["dark", dark]]) {
+for (const [name, tokens] of [
+  ["light", light],
+  ["dark", dark],
+]) {
   console.log(`\n${name}`);
   for (const [fg, bg, label] of PAIRS) {
     const fgHex = tokens[fg];

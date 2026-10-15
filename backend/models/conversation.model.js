@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
 
+// A stable, order-independent key for a pair of users, so "A and B" and
+// "B and A" map to the same conversation.
+export const participantsKeyFor = (a, b) => [a.toString(), b.toString()].sort().join(":");
+
 const conversationSchema = new mongoose.Schema(
   {
     participants: [
@@ -8,32 +12,23 @@ const conversationSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-    messages: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Message",
-        default: [],
-      },
-    ],
-    status: {
+    // Backs the unique index below. Conversations created before this field
+    // existed do not have it until they are next touched or the backfill in
+    // scripts/backfill-participants-key.js has run.
+    participantsKey: {
       type: String,
-      enum: ['active', 'blocked', 'pending'],
-      default: 'pending',
-    },
-    blockedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null,
-    },
-    isAnonymous: {
-      type: Boolean,
-      default: false,
     },
   },
   { timestamps: true }
 );
 
 conversationSchema.index({ participants: 1, updatedAt: -1 });
+// Makes a duplicate conversation for the same pair impossible, even when two
+// first messages race each other.
+conversationSchema.index(
+  { participantsKey: 1 },
+  { unique: true, partialFilterExpression: { participantsKey: { $type: "string" } } }
+);
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
 

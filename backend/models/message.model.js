@@ -6,7 +6,6 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -18,9 +17,80 @@ const messageSchema = new mongoose.Schema(
     // `senderPublicKey`, but nothing in the app ever encrypted anything — the
     // field held plaintext under a name that claimed otherwise. Renamed so the
     // schema describes what it actually stores. See docs/V2-REDESIGN.md §3.2.
+    // Optional when the message carries an image (it is then the caption).
+    // A message must have a body, an image, or both — enforced below.
     body: {
       type: String,
-      required: true,
+    },
+
+    // Image attachment. The bytes live in media storage
+    // (backend/storage/mediaStorage.js) and are only readable through
+    // GET /api/media/:id, which checks the reader is in this conversation.
+    image: {
+      type: new mongoose.Schema(
+        {
+          fullId: { type: mongoose.Schema.Types.ObjectId, required: true },
+          thumbId: { type: mongoose.Schema.Types.ObjectId, required: true },
+          contentType: { type: String, required: true },
+          width: { type: Number, required: true },
+          height: { type: Number, required: true },
+          animated: { type: Boolean, default: false },
+          // Tiny inline data URI, shown blurred while the thumbnail loads.
+          placeholder: { type: String },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
+
+    // Call history line ("Voice call · 2:31", "Missed video call"). Written
+    // only by the server (backend/socket/calls.js), never from client input.
+    call: {
+      type: new mongoose.Schema(
+        {
+          kind: { type: String, enum: ["audio", "video"], required: true },
+          status: { type: String, enum: ["completed", "missed", "declined"], required: true },
+          durationMs: { type: Number, default: 0 },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
+
+    // Voice note. Bytes in media storage, like images; served with Range
+    // support so Safari can play them.
+    voice: {
+      type: new mongoose.Schema(
+        {
+          mediaId: { type: mongoose.Schema.Types.ObjectId, required: true },
+          contentType: { type: String, required: true },
+          durationMs: { type: Number, required: true },
+          // 0..1 peak levels for drawing the waveform. Supplied by the
+          // recording client; cosmetic only.
+          waveform: { type: [Number], default: [] },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
+
+    // Set when the sender edits the text. Shown as "edited".
+    editedAt: { type: Date },
+
+    // Title/description card for the first link in the message, fetched by
+    // the server (backend/utils/linkPreview.js). Text only: preview images
+    // would mean hotlinking (leaking readers' IPs) or proxying arbitrary URLs.
+    linkPreview: {
+      type: new mongoose.Schema(
+        {
+          url: { type: String, required: true },
+          title: { type: String },
+          description: { type: String },
+          siteName: { type: String },
+        },
+        { _id: false }
+      ),
+      default: undefined,
     },
 
     // Legacy field, retained only so messages written before the rename remain
@@ -33,7 +103,17 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+// Serves both directions of the $or in getMessages, with _id doubling as the
+// pagination cursor: it is unique and increases with creation time.
+messageSchema.index({ senderId: 1, receiverId: 1, _id: -1 });
+
+messageSchema.pre("validate", function (next) {
+  const hasBody = typeof this.body === "string" && this.body.length > 0;
+  if (!hasBody && !this.image && !this.call && !this.voice && this.ciphertext == null) {
+    this.invalidate("body", "A message needs text, an image, a voice note or a call");
+  }
+  next();
+});
 
 // Old documents have `ciphertext` and no `body`. Fall back so a partially
 // migrated database still renders every message correctly.
