@@ -22,6 +22,12 @@ message request, and chat once it is accepted. It runs on
 - **Message requests**: the first message to someone is a request. Nothing more can be sent either way until they accept. They can also decline or block.
 - **Blocking** works in both directions and is never announced to the blocked person.
 - **Presence** (online/offline) is shared only with accepted contacts.
+- **Voice & video calls**: 1:1 calls straight between browsers (WebRTC), with camera switching, mute, recovery from network drops, rejoin after a reload, and call history in the chat.
+- **Image messages**: pick, paste or drag in JPEG/PNG/WebP/GIF up to 2 MB. Images are resized in the browser, re-encoded on the server (stripping location data), and visible only to the two people in the chat.
+- **Voice messages** with a waveform player.
+- **Installable app & push notifications** for messages and missed calls.
+- **Profiles**: name, bio and photo, plus a QR code / link that opens a chat with you.
+- **Chat tools**: edit a message for 15 minutes, link previews, and pin, mute or archive conversations.
 - **Responsive UI** with safe-area insets for notched phones and touch-friendly targets.
 
 ## Tech Stack
@@ -92,6 +98,8 @@ against a MongoDB service container, and the frontend build on every PR.
 | `NODE_ENV` | no | `development` locally. Only controls the extra Socket.IO origin for the Vite dev server. |
 | `CLIENT_ORIGINS` | no | Extra comma-separated origins allowed to open a Socket.IO connection. |
 | `MONGO_TEST_URI` | no | MongoDB server for integration tests. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | no | Turn on push notifications. Generate once with `npx web-push generate-vapid-keys` and keep them stable: changing them breaks existing subscriptions. `VAPID_SUBJECT` is a `mailto:` or `https:` contact. |
+| `ICE_SERVERS` | no | JSON array of WebRTC ICE servers for calls, e.g. to add a TURN relay. Defaults to Google's public STUN servers, which can't connect roughly 1 call in 6 on mobile data or office networks. |
 
 The session cookie's `Secure` flag follows the actual request: it is set over
 HTTPS (Render) and left off over plain-HTTP localhost. This needs no
@@ -103,7 +111,11 @@ The app is deployed on Render as a single web service:
 
 - **Build command**: `npm run build`
 - **Start command**: `npm start`
-- **Environment**: set `MONGO_DB_URI` and `JWT_SECRET` in the Render dashboard.
+- **Environment**: set `MONGO_DB_URI` and `JWT_SECRET` in the Render dashboard, plus the optional push and `ICE_SERVERS` settings above.
+
+Calls and installing the app need HTTPS, which Render provides. Images and voice
+messages are stored in MongoDB (GridFS), behind a small storage adapter
+(`backend/storage/mediaStorage.js`) so they can move to Cloudinary or S3 later.
 
 ## Database Maintenance Scripts
 

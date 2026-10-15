@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
-import { Box, Typography, Avatar, Button, CircularProgress, IconButton } from "@mui/material";
-import { ArrowBack, ChatBubbleOutlined, ShieldOutlined } from "@mui/icons-material";
+import { useEffect, useRef, useState } from "react";
+import { Box, Typography, Avatar, Button, CircularProgress, IconButton, Tooltip } from "@mui/material";
+import {
+  ArrowBack,
+  ChatBubbleOutlined,
+  ShieldOutlined,
+  CallOutlined,
+  VideocamOutlined,
+  ImageOutlined,
+} from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import useConversation from "../../zustand/useConversations.js";
@@ -11,6 +18,52 @@ import { useAuthContext } from "../../context/AuthContext";
 import { useSocketContext } from "../../context/SocketContext";
 import { apiClient } from "../../api/client";
 import { conversationsQueryKey } from "../../queries/conversations";
+import useImageDraft from "../../hooks/useImageDraft";
+import { startCall } from "../../calls/callEngine";
+import { useCallStore } from "../../calls/callStore";
+
+const hasFiles = (e) => [...(e.dataTransfer?.types ?? [])].includes("Files");
+
+// Drag an image anywhere onto the open chat to attach it. dragenter/dragleave
+// fire for every child crossed, so a depth count keeps the overlay steady.
+const useImageDrop = (enabled) => {
+  const { pickImage } = useImageDraft();
+  const [dragging, setDragging] = useState(false);
+  const depth = useRef(0);
+
+  if (!enabled) return { dragging: false, handlers: {} };
+
+  const handlers = {
+    onDragEnter: (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth.current += 1;
+      setDragging(true);
+    },
+    onDragOver: (e) => {
+      if (hasFiles(e)) e.preventDefault();
+    },
+    onDragLeave: (e) => {
+      if (!hasFiles(e)) return;
+      depth.current = Math.max(0, depth.current - 1);
+      if (depth.current === 0) setDragging(false);
+    },
+    onDrop: (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth.current = 0;
+      setDragging(false);
+      const files = [...e.dataTransfer.files];
+      pickImage(files.find((f) => f.type.startsWith("image/")) ?? files[0]);
+    },
+  };
+  return { dragging, handlers };
+};
+
+const CALL_KINDS = [
+  { kind: "audio", label: "Voice call", Icon: CallOutlined },
+  { kind: "video", label: "Video call", Icon: VideocamOutlined },
+];
 
 const MessageContainer = () => {
   const setSelectedConversation = useConversation((state) => state.setSelectedConversation);
@@ -66,9 +119,42 @@ const MessageContainer = () => {
   const isPending = selectedConversation?.requestStatus === "pending";
   const isPendingReceiver = isPending && selectedConversation.requestSenderId !== authUser._id;
   const isPendingSender = isPending && selectedConversation.requestSenderId === authUser._id;
+  const canCompose = Boolean(selectedConversation) && !isPending;
+  const { dragging, handlers: dropHandlers } = useImageDrop(canCompose);
+
+  const inCall = useCallStore(
+    (st) => Boolean(st.call) && !["ended", "failed", "error"].includes(st.call.phase)
+  );
+  // Calls need an accepted request (the server enforces it too).
+  const callBlockedReason = !selectedConversation
+    ? null
+    : selectedConversation.requestStatus !== "accepted"
+      ? "You can call once your chat request is accepted"
+      : !isOnline
+        ? `${selectedConversation.fullName} is offline`
+        : inCall
+          ? "You're already in a call"
+          : null;
+
+  const placeCall = (kind) => {
+    // Asking now, from a click, is the only time browsers allow the prompt.
+    // It lets a ringing call reach you when Talkify is in a background tab.
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+    startCall(
+      {
+        _id: selectedConversation._id,
+        fullName: selectedConversation.fullName,
+        profilePic: selectedConversation.profilePic,
+      },
+      kind
+    );
+  };
 
   return (
     <Box
+      {...dropHandlers}
       sx={{
         flex: 1,
         display: "flex",
@@ -76,8 +162,37 @@ const MessageContainer = () => {
         height: "100%",
         bgcolor: "rgba(255, 255, 255, 0.01)",
         minWidth: 0,
+        position: "relative",
       }}
     >
+      {dragging && (
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 8,
+            zIndex: 10,
+            pointerEvents: "none",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+            borderRadius: "20px",
+            border: "2px dashed",
+            borderColor: "primary.main",
+            bgcolor: "rgba(11, 14, 26, 0.85)",
+            color: "text.primary",
+          }}
+        >
+          <ImageOutlined sx={{ fontSize: 36 }} />
+          <Typography variant="body1" fontWeight={600}>
+            Drop an image to send
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            JPEG, PNG, WebP or GIF
+          </Typography>
+        </Box>
+      )}
       {!selectedConversation ? (
         <NoChatSelected />
       ) : (
@@ -135,13 +250,38 @@ const MessageContainer = () => {
                 </Typography>
                 <Typography
                   variant="caption"
-                  color={isOnline ? "success.main" : "text.secondary"}
                   fontWeight={500}
-                  sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
+                  // sx, not the color prop: MUI v9 ignores palette paths there.
+                  sx={{
+                    fontSize: { xs: "0.65rem", sm: "0.75rem" },
+                    color: isOnline ? "success.main" : "text.secondary",
+                  }}
                 >
                   {isOnline ? "Online" : "Offline"}
                 </Typography>
               </Box>
+            </Box>
+            <Box sx={{ display: "flex", gap: { xs: 0.5, sm: 1 }, flexShrink: 0 }}>
+              {CALL_KINDS.map(({ kind, label, Icon }) => (
+                <Tooltip key={kind} title={callBlockedReason ?? label}>
+                  {/* span: a disabled button can't host a tooltip itself */}
+                  <span>
+                    <IconButton
+                      onClick={() => placeCall(kind)}
+                      disabled={Boolean(callBlockedReason)}
+                      aria-label={callBlockedReason ? `${label} (${callBlockedReason})` : label}
+                      sx={{
+                        color: "text.primary",
+                        minWidth: 44,
+                        minHeight: 44,
+                        "&:hover": { color: "primary.light" },
+                      }}
+                    >
+                      <Icon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              ))}
             </Box>
           </Box>
 

@@ -4,6 +4,7 @@ import express from "express";
 import User from "../models/user.model.js";
 import { getPresenceContactIds } from "../utils/relationships.js";
 import { SESSION_COOKIE, decodeSessionToken } from "../utils/session.js";
+import { initCalls, registerCallHandlers, handleCallSocketDisconnect } from "./calls.js";
 
 // Minimal Cookie-header parser. Socket.IO hands us the raw header and
 // cookie-parser only runs on Express requests, so we read the one cookie we
@@ -109,6 +110,8 @@ export const disconnectSession = (userId, token) => {
   }
 };
 
+initCalls({ io, getSocketIds: getReceiverSocketIds });
+
 const onlineContactsOf = async (userId) => (await getPresenceContactIds(userId)).filter(isUserOnline);
 
 // Presence goes only to accepted contacts. It used to be broadcast to every
@@ -150,8 +153,11 @@ io.on("connection", (socket) => {
   );
 
   // Handlers are registered before any await so no event can slip past them.
+  registerCallHandlers(socket);
+
   socket.on("disconnect", () => {
     clearTimeout(expiryTimer);
+    handleCallSocketDisconnect(socket);
 
     const sockets = userSockets.get(userId);
     if (!sockets) return;

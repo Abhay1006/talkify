@@ -1,9 +1,12 @@
-import { useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import useGetMessages from "../../hooks/useGetMessages";
+import useSendImage from "../../hooks/useSendImage";
 import { useAuthContext } from "../../context/AuthContext";
+import useConversation from "../../zustand/useConversations.js";
 import MessageSkeleton from "../skeletons/MessageSkeletons";
-import Message from "./Message";
+import Message, { PendingImageMessage } from "./Message";
+import ImageLightbox from "./ImageLightbox";
 
 // How close to an edge (px) counts as "at" it.
 const NEAR_BOTTOM = 120;
@@ -12,6 +15,19 @@ const NEAR_TOP = 80;
 const Messages = ({ conversation }) => {
   const { authUser } = useAuthContext();
   const { messages, loading, fetchOlder, hasOlder, loadingOlder } = useGetMessages(conversation._id);
+  const allPending = useConversation((state) => state.pendingImages);
+  const pending = useMemo(
+    () => allPending.filter((p) => p.receiverId === conversation._id),
+    [allPending, conversation._id]
+  );
+  const { retry, discard } = useSendImage();
+
+  // The image viewer pages through every image loaded in this chat.
+  const [lightboxId, setLightboxId] = useState(null);
+  const images = useMemo(() => messages.filter((m) => m.image), [messages]);
+  const lightboxIndex = images.findIndex((m) => m._id === lightboxId);
+  // Stable, so the memoised bubbles don't re-render when it's passed down.
+  const openImage = useCallback((id) => setLightboxId(id), []);
 
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
@@ -63,6 +79,11 @@ const Messages = ({ conversation }) => {
     }
   }, [messages, authUser._id]);
 
+  // An upload you just started always comes into view.
+  useLayoutEffect(() => {
+    if (pending.length) bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [pending.length]);
+
   return (
     <Box
       ref={scrollRef}
@@ -101,12 +122,24 @@ const Messages = ({ conversation }) => {
             message={message}
             fromMe={message.senderId === authUser._id}
             profilePic={message.senderId === authUser._id ? authUser.profilePic : conversation.profilePic}
+            peer={conversation}
+            onOpenImage={openImage}
           />
         ))}
 
+      {pending.map((p) => (
+        <PendingImageMessage
+          key={p.tempId}
+          pending={p}
+          profilePic={authUser.profilePic}
+          onRetry={retry}
+          onDiscard={discard}
+        />
+      ))}
+
       {loading && [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)}
 
-      {!loading && messages.length === 0 && (
+      {!loading && messages.length === 0 && pending.length === 0 && (
         <Box sx={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center" }}>
           <Typography
             variant="body2"
@@ -119,6 +152,14 @@ const Messages = ({ conversation }) => {
       )}
 
       <Box ref={bottomRef} />
+
+      <ImageLightbox
+        images={images}
+        index={lightboxIndex}
+        peer={conversation}
+        onClose={() => setLightboxId(null)}
+        onNavigate={(i) => setLightboxId(images[i]._id)}
+      />
     </Box>
   );
 };

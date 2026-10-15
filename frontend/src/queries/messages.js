@@ -39,3 +39,28 @@ export const appendMessageToCache = (queryClient, userId, message) => {
     };
   });
 };
+
+/**
+ * Replaces a cached message with a newer copy (an edit, or a link preview
+ * that arrived after sending). If the conversation is loaded but the message
+ * isn't in it yet — the update can beat the sender's own POST response — it
+ * is added instead, and the late original is then skipped as a duplicate.
+ */
+export const updateMessageInCache = (queryClient, userId, message) => {
+  const data = queryClient.getQueryData(messagesQueryKey(userId));
+  if (!data?.pages?.length) return;
+
+  const present = data.pages.some((page) => page.messages.some((m) => m._id === message._id));
+  if (!present) {
+    appendMessageToCache(queryClient, userId, message);
+    return;
+  }
+
+  queryClient.setQueryData(messagesQueryKey(userId), (current) => ({
+    ...current,
+    pages: current.pages.map((page) => ({
+      ...page,
+      messages: page.messages.map((m) => (m._id === message._id ? message : m)),
+    })),
+  }));
+};

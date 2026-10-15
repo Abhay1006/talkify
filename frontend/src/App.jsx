@@ -4,6 +4,8 @@ import Home from "./pages/home/Home";
 import Login from "./pages/login/Login";
 import Signup from "./pages/signup/Signup";
 import { useAuthContext } from "./context/AuthContext";
+import CallManager from "./components/calls/CallManager";
+import PwaUpdatePrompt from "./components/PwaUpdatePrompt";
 
 function App() {
   const { authUser, checkingSession } = useAuthContext();
@@ -35,6 +37,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       )}
+      {authUser && !checkingSession && <CallManager />}
+      <PwaUpdatePrompt />
     </Box>
   );
 }

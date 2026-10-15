@@ -5,7 +5,7 @@ import { useSocketContext } from "../context/SocketContext";
 import { useAuthContext } from "../context/AuthContext";
 import useConversation from "../zustand/useConversations";
 import { conversationsQueryKey } from "../queries/conversations";
-import { appendMessageToCache } from "../queries/messages";
+import { appendMessageToCache, updateMessageInCache } from "../queries/messages";
 
 import notificationSound from "../assets/sounds/notification.mp3";
 
@@ -35,9 +35,13 @@ const useListenMessages = () => {
       // Our own message echoed from another tab or device.
       if (fromMe) return;
 
-      // Autoplay is blocked until the user has interacted with the page.
-      sound.currentTime = 0;
-      sound.play().catch(() => {});
+      // Calls have their own ringtone, and muted chats stay quiet.
+      const contact = queryClient.getQueryData(conversationsQueryKey)?.find?.((c) => c._id === otherId);
+      if (!newMessage.call && !contact?.muted) {
+        // Autoplay is blocked until the user has interacted with the page.
+        sound.currentTime = 0;
+        sound.play().catch(() => {});
+      }
 
       // Read at event time rather than closing over it, so the handler
       // never needs re-registering.
@@ -59,13 +63,21 @@ const useListenMessages = () => {
       queryClient.invalidateQueries({ queryKey: ["messages"] });
     };
 
+    // An edit, or a link preview fetched after the message was sent.
+    const handleMessageUpdated = (message) => {
+      const otherId = message.senderId === myId ? message.receiverId : message.senderId;
+      updateMessageInCache(queryClient, otherId, message);
+    };
+
     socket.on("newMessage", handleNewMessage);
+    socket.on("messageUpdated", handleMessageUpdated);
     socket.on("contactsUpdated", handleContactsUpdated);
     socket.on("connect", handleConnect);
 
     // Pass the handlers so this removes only its own listeners.
     return () => {
       socket.off("newMessage", handleNewMessage);
+      socket.off("messageUpdated", handleMessageUpdated);
       socket.off("contactsUpdated", handleContactsUpdated);
       socket.off("connect", handleConnect);
     };

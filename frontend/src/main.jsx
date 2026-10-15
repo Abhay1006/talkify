@@ -10,6 +10,11 @@ import App from "./App";
 import "./index.css";
 import { AuthContextProvider } from "./context/AuthContext";
 import { SocketContextProvider } from "./context/SocketContext";
+import { initPwa } from "./pwa";
+import { captureDeepLink } from "./hooks/useDeepLinks";
+
+captureDeepLink();
+initPwa();
 
 const queryClient = new QueryClient({
   defaultOptions: {

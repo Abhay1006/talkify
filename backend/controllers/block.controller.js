@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import BlockList from "../models/blockList.model.js";
 import { syncPresenceBetween } from "../socket/socket.js";
+import { endCallsBetween } from "../socket/calls.js";
 import { PUBLIC_USER_FIELDS } from "../utils/relationships.js";
 import { badRequest, conflict, notFound } from "../utils/httpError.js";
 import User from "../models/user.model.js";
@@ -27,6 +28,9 @@ export const blockUser = async (req, res) => {
     { upsert: true }
   );
   if (result.upsertedCount === 0) throw conflict("User is already blocked");
+
+  // Blocking someone mid-call hangs up immediately.
+  endCallsBetween(userId, blockedUserId);
 
   await syncPresenceBetween(userId, blockedUserId);
   res.status(200).json({ message: "User blocked successfully" });

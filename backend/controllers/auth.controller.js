@@ -18,11 +18,13 @@ export const PASSWORD_MAX_LENGTH = 72;
 const FULL_NAME_MAX_LENGTH = 50;
 const GENDERS = ["male", "female"];
 
-const toSelf = (user) => ({
+// The logged-in user's own profile, as the client keeps it.
+export const toSelf = (user) => ({
   _id: user._id,
   fullName: user.fullName,
   username: user.username,
   profilePic: user.profilePic,
+  bio: user.bio ?? "",
 });
 
 // Every credential field must be a plain string. Without this check a body

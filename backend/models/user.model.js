@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Shown in the user's own profile; editable via PUT /api/users/me.
+    bio: {
+      type: String,
+      default: "",
+      maxlength: 160,
+    },
   },
   { timestamps: true }
 );

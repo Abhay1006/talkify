@@ -63,6 +63,16 @@ export const AuthContextProvider = ({ children }) => {
     setAuthUser(null);
   }, [resetClientState]);
 
+  // Merges profile changes (name, bio, avatar) into the session user.
+  const updateAuthUser = useCallback((patch) => {
+    setAuthUser((current) => {
+      if (!current) return current;
+      const next = { ...current, ...patch };
+      writeStoredUser(next);
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     registerUnauthorizedCallback(endSession);
     return () => registerUnauthorizedCallback(null);
@@ -110,7 +120,7 @@ export const AuthContextProvider = ({ children }) => {
   }, [resetClientState]);
 
   return (
-    <AuthContext.Provider value={{ authUser, checkingSession, startSession, endSession }}>
+    <AuthContext.Provider value={{ authUser, checkingSession, startSession, endSession, updateAuthUser }}>
       {children}
     </AuthContext.Provider>
   );

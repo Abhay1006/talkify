@@ -48,9 +48,36 @@ const request = async (method, url, body) => {
   return handleResponse(res);
 };
 
+// multipart upload with progress. fetch() cannot report upload progress, so
+// this one uses XMLHttpRequest; errors match request()'s ApiError.
+const upload = (url, formData, { onProgress } = {}) =>
+  new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.responseType = "json";
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status === 401 && unauthorizedCallback) unauthorizedCallback();
+      const data = xhr.response;
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+      } else {
+        const fallback =
+          xhr.status >= 500 ? "The server is having trouble. Please try again." : "Upload failed";
+        reject(new ApiError(data?.error || fallback, xhr.status));
+      }
+    };
+    xhr.onerror = () => reject(new ApiError("Can't reach the server. Check your connection.", 0));
+    xhr.send(formData);
+  });
+
 export const apiClient = {
   get: (url) => request("GET", url),
   post: (url, body) => request("POST", url, body),
   put: (url, body) => request("PUT", url, body),
+  patch: (url, body) => request("PATCH", url, body),
   delete: (url) => request("DELETE", url),
+  upload,
 };

@@ -3,11 +3,14 @@ import MessageContainer from "../../components/messages/MessageContainer";
 import Sidebar from "../../components/sidebar/Sidebar";
 import useConversation from "../../zustand/useConversations.js";
 import useListenMessages from "../../hooks/useListenMessages";
+import useDeepLinks from "../../hooks/useDeepLinks";
 
 const Home = () => {
   const selectedConversation = useConversation((state) => state.selectedConversation);
   // Here, not in the message pane, so it runs whether or not a chat is open.
   useListenMessages();
+  // Profile QR links (?add=) and notification taps (?chat=).
+  useDeepLinks();
 
   return (
     <Box

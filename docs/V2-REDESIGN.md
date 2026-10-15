@@ -1,6 +1,6 @@
 # Talkify v2 — Redesign & Feature Plan
 
-**Status:** Draft for approval · **Branch:** `v2-development` · **Written:** 2026-08-17
+**Status:** Phases 0, 4, 5 and 6 complete · **Branch:** `v2-development` · **Written:** 2026-08-17
 
 This document covers four things:
 
@@ -588,14 +588,72 @@ Token file, light + dark themes, theme toggle with pre-paint application, rewrit
 **Phase 3 — Messaging depth (Tier 1, §7)**
 Message model migration, pagination, typing indicators, receipts, reactions, replies, delete, last-message previews, real presence.
 
-**Phase 4 — Images (§6)**
-Upload pipeline, sharp processing, storage integration, authorized media route, gallery/lightbox viewer.
+**Phase 4 — Images (§6) — ✅ COMPLETE (2026-10-15)**
 
-**Phase 5 — Calls (§8)**
-Signaling with authorization, WebRTC client, call UI, TURN setup, call history.
+| Item | § | Status |
+|---|---|---|
+| Client downscale (1600px, WebP q0.82, JPEG/PNG fallback), 2 MB cap | 6.1 | ✅ `frontend/src/utils/prepareImage.js` |
+| Attach button, paste from clipboard, drag-and-drop onto the chat | 6.1 | ✅ |
+| Optimistic bubble with progress ring, retry / discard on failure | 6.1 | ✅ |
+| multer memory storage, 2 MB / 1 file limits, upload rate limit | 6.2 | ✅ |
+| Type decided from the bytes, never from Content-Type or extension | 6.2 | ✅ libvips sniffing via `sharp().metadata()` — see note |
+| Re-encode everything through sharp: EXIF/GPS stripped, orientation applied, polyglots destroyed | 6.2 | ✅ verified |
+| Full (1600px) + thumbnail (400px) + inline placeholder | 6.2 | ✅ see note |
+| Animated GIFs stay animated (stored as animated WebP) | 6.2 | ✅ |
+| Decompression-bomb and processing-time limits | 6.2 | ✅ |
+| Storage adapter (`putObject` / `getObject` / `deleteObject`), GridFS first | 6.3, Decision 2 | ✅ `backend/storage/mediaStorage.js` |
+| `GET /api/media/:id` — participants only, blocked = gone, 404 to outsiders | 6.3 | ✅ verified |
+| Lightbox: full-screen, prev/next through the chat's images, keys + swipe, download | — | ✅ |
 
-**Phase 6 — Polish**
-PWA, push notifications, QR codes, voice notes, remaining Tier 2.
+**Notes on Phase 4:**
+- **Sniffing:** `file-type` was dropped in favour of the format libvips detects from the bytes while decoding. Same guarantee (content, not headers, decides), one dependency fewer, and current `file-type` needs Node 22+.
+- **Placeholder:** instead of a blurhash string, each message stores a ~16px WebP as a data URI (~100–300 bytes) shown blurred. Same effect, no client-side decoder.
+- **Orphans:** if saving the message fails, the stored files are deleted again.
+- **Fixed along the way:** MUI v9 removed `InputProps`/`PaperProps`, so the composer's send and attach buttons, the login/signup field icons and the password-visibility toggle were not rendering. All moved to `slotProps`.
+- **Node version:** `sharp` needs Node ≥ 20.9; pinned via `engines` in `package.json`.
+
+**Phase 5 — Calls (§8) — ✅ COMPLETE (2026-10-15)**
+
+| Item | Status |
+|---|---|
+| Server call state machine, every event authorized (`backend/socket/calls.js`) | ✅ 14 automated tests |
+| Calls need an accepted chat request; blocks honoured both ways; blocking mid-call hangs up | ✅ |
+| Invite carries no SDP: no IP address is exchanged until the callee accepts | ✅ verified |
+| Busy, offline (logged as missed + push), 45 s ring timeout, decline, cancel | ✅ |
+| Multi-tab: rings every tab, first to answer owns the call, signals pinned to the two answering sockets | ✅ |
+| Server-written call history ("Voice call · 2:31", "Missed video call") | ✅ |
+| WebRTC with perfect negotiation; audio + video transceivers up front, so camera toggles never renegotiate | ✅ |
+| Call UI: incoming dialog, full-screen call, draggable self view, mute, camera, flip camera, wake lock | ✅ |
+| Failure paths: permission denied / no mic / mic busy / no camera → audio / insecure origin | ✅ |
+| Recovery: ICE restart, Socket.IO resume (15 s grace), Rejoin after a page reload | ✅ verified |
+| STUN-only per Decision 3, with the honest "Couldn't connect…" message; TURN via `ICE_SERVERS` env, no code change | ✅ |
+| Connection quality indicator, background-tab title flash + notification | ✅ |
+
+Verified with two Chromium instances on fake camera/mic (32 scenario checks). **Still needs a human with real phones**, because the failure modes STUN-only is known for only show up on real networks:
+
+1. Deploy (calls need HTTPS; Render provides it).
+2. Two phones, both on mobile data (not Wi-Fi): voice call, then video call. Expect roughly 1 in 6 to fail to connect; check the failure message appears within ~25 s and Try again works.
+3. iPhone Safari ↔ Android Chrome video call; switch cameras on both.
+4. Lock the phone mid-call, unlock: audio should continue or recover.
+5. Toggle airplane mode for ~5 s mid-call: "Reconnecting…", then recovery.
+6. If more than about 1 call in 6 fails, set `ICE_SERVERS` to include a TURN relay (e.g. Metered free tier).
+
+**Phase 6 — Polish — ✅ COMPLETE (2026-10-15)**
+
+| Item | Notes |
+|---|---|
+| Installable PWA | Manifest, icons, own service worker. Precaches the app shell only — never `/api` or `/socket.io`, so private data is never served from cache. Update prompt rather than auto-reload (would cut calls). |
+| Push notifications | Web Push with VAPID keys from env (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`); off when unset. Sent only to recipients with no open tab, skipped for muted chats. Subscription endpoints restricted to the real push services (Google, Mozilla, Apple, Microsoft) — otherwise a subscription would be an SSRF primitive. Dead subscriptions pruned on 404/410; logout unsubscribes the device. |
+| QR code | Talk IDs don't exist yet (Phase 1), so the QR/link is `/?add=<username>`: opens a chat with you, survives the login redirect. |
+| Voice notes | MediaRecorder (Opus/WebM, Opus/Ogg, AAC/MP4 on Safari), 5 min / 3 MB. No ffmpeg on the server, so audio is **not re-encoded** like images are: the container is identified from magic bytes and served with that exact type, `nosniff` and a sandboxing CSP. Media route now supports Range requests (Safari requires them). |
+| Edit message | Own text/captions, 15-minute window, "edited" marker, live update. |
+| Pin / mute / archive | Per user, private to them. Mute silences the chime and push. |
+| Profile editing | Name, bio, avatar (re-encoded 256 px square, EXIF stripped, public to logged-in users). |
+| Link previews | Text-only cards (no images: hotlinking would leak readers' IPs, proxying would widen SSRF). Fetcher validates every resolved address inside the socket's own DNS lookup (no rebinding gap), default ports only, ≤ 3 re-checked redirects, 5 s / 256 KB / HTML only. 15 in-process SSRF cases tested. |
+
+Found by the new tests and fixed: Node's `net.BlockList` treats `::ffff:0:0/96` as covering **all** IPv4, which would have blocked every preview; and a preview could reach the sender before their own send completed and be dropped.
+
+Not done in this phase: Talk ID / passwordless identity (Phase 1), the design-system rewrite and light mode (Phase 2), and Phase 3's messaging depth (typing indicators, receipts, reactions, replies, delete, pagination).
 
 Phases 0–2 are the load-bearing ones. 3–6 can be resequenced freely; if you want calls sooner, Phase 5 can move ahead of 3 and 4 once Phase 0 lands.
 

@@ -27,13 +27,17 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.2",
-    "socket.io": "^4.7.5"
+    "multer": "^2.4.0",
+    "sharp": "^0.35.5",
+    "socket.io": "^4.7.5",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
     "eslint": "^8.57.1",
     "nodemon": "^3.1.4",
     "prettier": "^3.9.9",
+    "socket.io-client": "^4.8.4",
     "supertest": "^7.3.0"
   }
 }
