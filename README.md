@@ -1,105 +1,142 @@
 # Talkify
 
-Talkify is a web application hosted on Render that facilitates seamless and interactive communication. It provides a user-friendly platform for discussions, chats, or any form of textual interaction.
+Talkify is a real-time chat app. People find each other by username, send a
+message request, and chat once it is accepted. It runs on
+[Render](https://talkify-etjd.onrender.com/).
 
 ## Table of Contents
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
-- [Installation](#installation)
-- [Usage](#usage)
+- [Local Setup](#local-setup)
+- [Scripts](#scripts)
+- [Environment Variables](#environment-variables)
 - [Deployment](#deployment)
+- [Database Maintenance Scripts](#database-maintenance-scripts)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Features
 
-- **Real-Time Communication**: Users can chat and interact in real-time via WebSockets.
-- **User-Friendly Interface**: The application has an intuitive, premium glassmorphism interface.
-- **Voice & Video Calls**: 1:1 calls straight between browsers (WebRTC), with camera switching, mute, reconnection after network drops, and call history in the chat.
-- **Voice Messages**: Record and send voice notes with a waveform player.
-- **Image Messages**: Send JPEG, PNG, WebP or GIF images (up to 2 MB) by picking, pasting or dragging them in. Images are resized in the browser, stripped of location data on the server, and only visible to the two people in the chat.
-- **Installable App & Notifications**: Install Talkify to your home screen or desktop, and get push notifications for messages and missed calls.
-- **Profiles**: Edit your name, bio and photo, and share a QR code that opens a chat with you.
-- **Chat Tools**: Edit messages, link previews, and pin, mute or archive conversations.
-- **Mobile-Optimized & Responsive Design**: The website is fully responsive and optimized for mobile devices, featuring a native-like experience with safe area insets and touch-friendly interactions.
+- **Real-time messaging** over Socket.IO, synced across all of your open tabs and devices.
+- **Message requests**: the first message to someone is a request. Nothing more can be sent either way until they accept. They can also decline or block.
+- **Blocking** works in both directions and is never announced to the blocked person.
+- **Presence** (online/offline) is shared only with accepted contacts.
+- **Voice & video calls**: 1:1 calls straight between browsers (WebRTC), with camera switching, mute, recovery from network drops, rejoin after a reload, and call history in the chat.
+- **Image messages**: pick, paste or drag in JPEG/PNG/WebP/GIF up to 2 MB. Images are resized in the browser, re-encoded on the server (stripping location data), and visible only to the two people in the chat.
+- **Voice messages** with a waveform player.
+- **Installable app & push notifications** for messages and missed calls.
+- **Profiles**: name, bio and photo, plus a QR code / link that opens a chat with you.
+- **Chat tools**: edit a message for 15 minutes, link previews, and pin, mute or archive conversations.
+- **Responsive UI** with safe-area insets for notched phones and touch-friendly targets.
 
 ## Tech Stack
 
-- **Frontend**: [React.js](https://reactjs.org/), [Material UI (MUI)](https://mui.com/), [Zustand](https://zustand-demo.pmnd.rs/)
-- **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), [Socket.io](https://socket.io/)
-- **Database**: [MongoDB](https://www.mongodb.com/)
+- **Frontend**: [React](https://react.dev/), [Vite](https://vitejs.dev/), [Material UI](https://mui.com/), [TanStack Query](https://tanstack.com/query), [Zustand](https://zustand-demo.pmnd.rs/)
+- **Backend**: [Node.js](https://nodejs.org/), [Express](https://expressjs.com/), [Socket.IO](https://socket.io/)
+- **Database**: [MongoDB](https://www.mongodb.com/) via Mongoose
 - **Hosting**: [Render](https://render.com/)
 
-## Installation
+## Local Setup
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/en/download/) installed on your machine.
-- [MongoDB](https://www.mongodb.com/try/download/community) set up locally or using MongoDB Atlas.
+- [Node.js](https://nodejs.org/en/download/) 22 or newer
+- MongoDB running locally, or a [MongoDB Atlas](https://www.mongodb.com/atlas) connection string
 
 ### Steps
 
-1. **Clone the repository**:
+1. **Clone and install**
     ```bash
     git clone https://github.com/Abhay1006/talkify.git
     cd talkify
-    ```
-
-2. **Install dependencies**:
-    ```bash
     npm install
+    npm install --prefix frontend
     ```
 
-3. **Set up environment variables**:
-    Create a `.env` file in the root directory:
-    ```
-    MONGO_DB_URI=your_mongodb_connection_string
-    JWT_SECRET=a_long_random_secret
-
-    # Optional: push notifications. Generate once with
-    #   npx web-push generate-vapid-keys
-    # and keep them stable (changing them breaks existing subscriptions).
-    VAPID_PUBLIC_KEY=
-    VAPID_PRIVATE_KEY=
-    VAPID_SUBJECT=mailto:you@example.com
-
-    # Optional: a TURN relay for calls on restrictive networks (JSON array of
-    # RTCIceServer objects). Defaults to Google's public STUN servers.
-    # ICE_SERVERS=[{"urls":"turn:turn.example.com:3478","username":"u","credential":"p"}]
-    ```
-
-4. **Run the application**:
+2. **Configure the environment**
     ```bash
-    npm run build   # installs everything and builds the frontend
-    npm start
+    cp .env.example .env
     ```
-    The application runs at `http://localhost:5001`. For frontend development, run `npm run server` and `npm run dev --prefix frontend`, then open `http://localhost:3000`.
+    Then set at least `MONGO_DB_URI` and `JWT_SECRET` (see [Environment Variables](#environment-variables)).
 
-5. **Run the tests** (needs a MongoDB at `mongodb://127.0.0.1:27017`, or set `TEST_MONGO_URI`):
+3. **Run in development**
     ```bash
-    npm test
+    npm run dev
+    ```
+    This starts the API on `http://localhost:5001` and the Vite dev server on
+    **`http://localhost:3000`**. Open port 3000; it proxies `/api` and
+    `/socket.io` to the API, so the session cookie works with no CORS setup.
+
+4. **Run a production build locally** (optional)
+    ```bash
+    npm run build    # installs dependencies and builds frontend/dist
+    npm start        # serves the API and the built app on http://localhost:5001
     ```
 
-## Usage
+## Scripts
 
-- Visit [Talkify](https://talkify-etjd.onrender.com/) to start interacting.
-- Sign up or log in to join conversations.
+| Command | What it does |
+|---|---|
+| `npm run dev` | API (with nodemon) and Vite dev server together |
+| `npm start` | Production server; serves `frontend/dist` |
+| `npm run build` | Installs all dependencies and builds the frontend |
+| `npm run lint` | ESLint for backend and frontend |
+| `npm run format` / `format:check` | Prettier |
+| `npm test` | Backend tests. Integration tests run only when `MONGO_TEST_URI` is set |
+
+CI (`.github/workflows/ci.yml`) runs lint, format check, the full test suite
+against a MongoDB service container, and the frontend build on every PR.
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `MONGO_DB_URI` | yes | MongoDB connection string. The server exits at startup if it cannot connect. |
+| `JWT_SECRET` | yes | Long random string used to sign session tokens. The server refuses to start without it. |
+| `PORT` | no | API port, default `5001`. |
+| `NODE_ENV` | no | `development` locally. Only controls the extra Socket.IO origin for the Vite dev server. |
+| `CLIENT_ORIGINS` | no | Extra comma-separated origins allowed to open a Socket.IO connection. |
+| `MONGO_TEST_URI` | no | MongoDB server for integration tests. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | no | Turn on push notifications. Generate once with `npx web-push generate-vapid-keys` and keep them stable: changing them breaks existing subscriptions. `VAPID_SUBJECT` is a `mailto:` or `https:` contact. |
+| `ICE_SERVERS` | no | JSON array of WebRTC ICE servers for calls, e.g. to add a TURN relay. Defaults to Google's public STUN servers, which can't connect roughly 1 call in 6 on mobile data or office networks. |
+
+The session cookie's `Secure` flag follows the actual request: it is set over
+HTTPS (Render) and left off over plain-HTTP localhost. This needs no
+configuration.
 
 ## Deployment
 
-The application is deployed on [Render](https://render.com/). Follow these steps to deploy:
+The app is deployed on Render as a single web service:
 
-1. Connect your repository to Render.
-2. Set up environment variables on Render's dashboard.
-3. Deploy the app from Render’s dashboard.
+- **Build command**: `npm run build`
+- **Start command**: `npm start`
+- **Environment**: set `MONGO_DB_URI` and `JWT_SECRET` in the Render dashboard, plus the optional push and `ICE_SERVERS` settings above.
+
+Calls and installing the app need HTTPS, which Render provides. Images and voice
+messages are stored in MongoDB (GridFS), behind a small storage adapter
+(`backend/storage/mediaStorage.js`) so they can move to Cloudinary or S3 later.
+
+## Database Maintenance Scripts
+
+Run these against production (after a backup) when the release notes call for them:
+
+| Script | Purpose |
+|---|---|
+| `node backend/scripts/check-index-preflight.js [--fix]` | Finds duplicate rows that would block the unique indexes on chat requests and blocks |
+| `node backend/scripts/backfill-participants-key.js [--apply]` | Adds `participantsKey` to older conversations and removes duplicate conversations for the same pair. The app also does this lazily as pairs message each other. |
+| `node backend/scripts/migrate-message-body.js` | Renames the legacy `ciphertext` message field to `body` |
+| `node backend/scripts/fix-avatars.js` | Replaces avatars from the retired iran.liara.run service |
 
 ## Contributing
 
-We welcome contributions to improve Talkify! If you have suggestions or find issues, feel free to open a pull request or submit an issue.
+Suggestions and fixes are welcome: open an issue or a pull request. Please run
+`npm run lint`, `npm run format` and `npm test` first.
 
-## App useage-
+## License
 
+ISC
+
+## App usage
 
 https://github.com/user-attachments/assets/2442fc8a-6647-4cab-b3e5-15b07d6c0b99
-

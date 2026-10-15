@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 // UI-facing call state. The RTCPeerConnection and other non-serialisable
 // machinery live in callEngine.js; components only read from here.
@@ -22,7 +22,7 @@ export const useCallStore = create(() => ({
   remoteVersion: 0,
   micOn: true,
   camOn: false,
-  facingMode: 'user',
+  facingMode: "user",
   canFlipCamera: false,
   peerMicOn: true,
   peerCamOn: false,

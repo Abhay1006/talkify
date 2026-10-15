@@ -19,7 +19,11 @@ export const LinkifiedText = ({ text, fromMe }) => {
               href={url}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              sx={{ color: fromMe ? "white" : "primary.light", textDecorationColor: "currentColor", wordBreak: "break-all" }}
+              sx={{
+                color: fromMe ? "white" : "primary.light",
+                textDecorationColor: "currentColor",
+                wordBreak: "break-all",
+              }}
             >
               {url}
             </Link>
@@ -67,10 +71,16 @@ export const LinkPreviewCard = ({ preview, fromMe }) => {
         "&:hover": { bgcolor: fromMe ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.08)" },
       }}
     >
-      <Typography variant="caption" sx={{ opacity: 0.75, display: "block" }}>{preview.siteName || host}</Typography>
-      <Typography variant="body2" fontWeight={600} sx={{ ...clamp(2), lineHeight: 1.35 }}>{preview.title}</Typography>
+      <Typography variant="caption" sx={{ opacity: 0.75, display: "block" }}>
+        {preview.siteName || host}
+      </Typography>
+      <Typography variant="body2" fontWeight={600} sx={{ ...clamp(2), lineHeight: 1.35 }}>
+        {preview.title}
+      </Typography>
       {preview.description && (
-        <Typography variant="caption" sx={{ ...clamp(2), opacity: 0.85, mt: 0.25 }}>{preview.description}</Typography>
+        <Typography variant="caption" sx={{ ...clamp(2), opacity: 0.85, mt: 0.25 }}>
+          {preview.description}
+        </Typography>
       )}
     </Box>
   );

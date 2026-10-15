@@ -1,5 +1,5 @@
-import { useCallStore } from './callStore';
-import { startTone, stopTone, playEndTone } from './tones';
+import { useCallStore } from "./callStore";
+import { startTone, stopTone, playEndTone } from "./tones";
 
 // Client half of 1:1 calls (docs/V2-REDESIGN.md §8). One call at a time per
 // tab. The server (backend/socket/calls.js) owns call state; this owns media
@@ -27,7 +27,7 @@ const set = (patch) => useCallStore.setState(patch);
 const setCall = (patch) => useCallStore.setState((s) => (s.call ? { call: { ...s.call, ...patch } } : {}));
 
 let socket = null;
-let resolvePeer = (id) => ({ _id: id, fullName: 'Unknown', profilePic: '' });
+let resolvePeer = (id) => ({ _id: id, fullName: "Unknown", profilePic: "" });
 let pc = null;
 let localStream = null;
 let remoteStream = null;
@@ -61,60 +61,68 @@ const clearAllTimers = () => {
 
 const ack = (event, payload, timeout = 8000) =>
   new Promise((resolve) => {
-    if (!socket?.connected) return resolve({ ok: false, reason: 'offline' });
-    socket.timeout(timeout).emit(event, payload, (err, reply) => resolve(err ? { ok: false, reason: 'timeout' } : reply ?? { ok: false }));
+    if (!socket?.connected) return resolve({ ok: false, reason: "offline" });
+    socket
+      .timeout(timeout)
+      .emit(event, payload, (err, reply) =>
+        resolve(err ? { ok: false, reason: "timeout" } : (reply ?? { ok: false }))
+      );
   });
 
 const currentCallId = () => get().call?.callId;
 
 const sendSignal = (data) => {
   const callId = currentCallId();
-  if (callId && socket?.connected) socket.emit('call:signal', { callId, data });
+  if (callId && socket?.connected) socket.emit("call:signal", { callId, data });
 };
 
 const sendMediaState = () => sendSignal({ media: { mic: get().micOn, cam: get().camOn } });
 
 const loadIceServers = () => {
   if (!iceServersPromise) {
-    iceServersPromise = fetch('/api/calls/ice-servers')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('ice'))))
+    iceServersPromise = fetch("/api/calls/ice-servers")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("ice"))))
       .then((body) => body.iceServers)
       .catch(() => {
         iceServersPromise = null; // retry next time
-        return [{ urls: 'stun:stun.l.google.com:19302' }];
+        return [{ urls: "stun:stun.l.google.com:19302" }];
       });
   }
   return iceServersPromise;
 };
 
 /** getUserMedia with failures translated into something we can explain. */
-export const getMedia = async (kind, facingMode = 'user') => {
+export const getMedia = async (kind, facingMode = "user") => {
   if (!navigator.mediaDevices?.getUserMedia) {
-    throw new CallError(window.isSecureContext ? 'unsupported' : 'insecure');
+    throw new CallError(window.isSecureContext ? "unsupported" : "insecure");
   }
   try {
     return await navigator.mediaDevices.getUserMedia({
       audio: AUDIO_CONSTRAINTS,
-      video: kind === 'video' ? videoConstraints(facingMode) : false,
+      video: kind === "video" ? videoConstraints(facingMode) : false,
     });
   } catch (error) {
-    if (kind === 'video' && ['NotFoundError', 'OverconstrainedError', 'NotReadableError'].includes(error.name)) {
+    if (
+      kind === "video" &&
+      ["NotFoundError", "OverconstrainedError", "NotReadableError"].includes(error.name)
+    ) {
       // No usable camera: carry on as a voice call rather than failing.
-      const audioOnly = await getMedia('audio');
-      audioOnly.cameraUnavailable = error.name === 'NotReadableError' ? 'busy' : 'missing';
+      const audioOnly = await getMedia("audio");
+      audioOnly.cameraUnavailable = error.name === "NotReadableError" ? "busy" : "missing";
       return audioOnly;
     }
-    if (error.name === 'NotAllowedError' || error.name === 'SecurityError') throw new CallError(kind === 'video' ? 'permission_denied_video' : 'permission_denied');
-    if (error.name === 'NotFoundError') throw new CallError('no_microphone');
-    if (error.name === 'NotReadableError') throw new CallError('device_busy');
-    throw new CallError('media_failed');
+    if (error.name === "NotAllowedError" || error.name === "SecurityError")
+      throw new CallError(kind === "video" ? "permission_denied_video" : "permission_denied");
+    if (error.name === "NotFoundError") throw new CallError("no_microphone");
+    if (error.name === "NotReadableError") throw new CallError("device_busy");
+    throw new CallError("media_failed");
   }
 };
 
 const refreshCanFlip = async () => {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    set({ canFlipCamera: devices.filter((d) => d.kind === 'videoinput').length > 1 });
+    set({ canFlipCamera: devices.filter((d) => d.kind === "videoinput").length > 1 });
   } catch {
     set({ canFlipCamera: false });
   }
@@ -125,14 +133,16 @@ const stopLocalMedia = () => {
   localStream = null;
 };
 
-const videoTransceiver = () => pc?.getTransceivers().find((t) => t.receiver.track?.kind === 'video');
+const videoTransceiver = () => pc?.getTransceivers().find((t) => t.receiver.track?.kind === "video");
 
 // Keep the screen on during calls, mostly for phones on video calls.
 const acquireWakeLock = async () => {
   try {
-    if (!wakeLock && navigator.wakeLock && document.visibilityState === 'visible') {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    if (!wakeLock && navigator.wakeLock && document.visibilityState === "visible") {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => {
+        wakeLock = null;
+      });
     }
   } catch {
     wakeLock = null;
@@ -145,9 +155,12 @@ const releaseWakeLock = () => {
 };
 
 // A wake lock is dropped whenever the tab is hidden; take it back on return.
-document.addEventListener('visibilitychange', () => {
+document.addEventListener("visibilitychange", () => {
   const phase = get().call?.phase;
-  if (document.visibilityState === 'visible' && (phase === 'active' || phase === 'connecting' || phase === 'reconnecting')) {
+  if (
+    document.visibilityState === "visible" &&
+    (phase === "active" || phase === "connecting" || phase === "reconnecting")
+  ) {
     acquireWakeLock();
   }
 });
@@ -164,10 +177,15 @@ const sampleStats = async () => {
     let lost = 0;
     let received = 0;
     report.forEach((s) => {
-      if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded' && s.currentRoundTripTime != null) {
+      if (
+        s.type === "candidate-pair" &&
+        s.nominated &&
+        s.state === "succeeded" &&
+        s.currentRoundTripTime != null
+      ) {
         rtt = s.currentRoundTripTime;
       }
-      if (s.type === 'inbound-rtp' && s.kind === 'audio') {
+      if (s.type === "inbound-rtp" && s.kind === "audio") {
         lost += s.packetsLost ?? 0;
         received += s.packetsReceived ?? 0;
       }
@@ -180,9 +198,11 @@ const sampleStats = async () => {
     const loss = dTotal ? dLost / dTotal : 0;
     const r = rtt ?? 0;
     const quality =
-      r < QUALITY_THRESHOLDS.good.rtt && loss < QUALITY_THRESHOLDS.good.loss ? 'good'
-        : r < QUALITY_THRESHOLDS.fair.rtt && loss < QUALITY_THRESHOLDS.fair.loss ? 'fair'
-          : 'poor';
+      r < QUALITY_THRESHOLDS.good.rtt && loss < QUALITY_THRESHOLDS.good.loss
+        ? "good"
+        : r < QUALITY_THRESHOLDS.fair.rtt && loss < QUALITY_THRESHOLDS.fair.loss
+          ? "fair"
+          : "poor";
     if (get().quality !== quality) set({ quality });
   } catch {
     // getStats can throw while the connection is being torn down.
@@ -224,33 +244,36 @@ const onConnectionState = () => {
   const state = pc.connectionState;
   const phase = get().call?.phase;
 
-  if (state === 'connected') {
-    clearTimer('connect');
-    clearTimer('restart');
-    clearTimer('recover');
-    setCall({ phase: 'active', connectedAt: get().call?.connectedAt ?? Date.now() });
+  if (state === "connected") {
+    clearTimer("connect");
+    clearTimer("restart");
+    clearTimer("recover");
+    setCall({ phase: "active", connectedAt: get().call?.connectedAt ?? Date.now() });
     sendMediaState();
     startStats();
     acquireWakeLock();
     return;
   }
 
-  if ((state === 'disconnected' || state === 'failed') && (phase === 'active' || phase === 'reconnecting')) {
-    setCall({ phase: 'reconnecting' });
+  if ((state === "disconnected" || state === "failed") && (phase === "active" || phase === "reconnecting")) {
+    setCall({ phase: "reconnecting" });
     // A brief 'disconnected' often heals by itself; restart ICE only if not.
     if (!timers.restart) {
-      timers.restart = setTimeout(() => {
-        delete timers.restart;
-        if (pc && pc.connectionState !== 'connected') pc.restartIce();
-      }, state === 'failed' ? 0 : ICE_RESTART_DELAY_MS);
+      timers.restart = setTimeout(
+        () => {
+          delete timers.restart;
+          if (pc && pc.connectionState !== "connected") pc.restartIce();
+        },
+        state === "failed" ? 0 : ICE_RESTART_DELAY_MS
+      );
     }
     if (!timers.recover) {
-      timers.recover = setTimeout(() => failCall('lost'), RECOVERY_TIMEOUT_MS);
+      timers.recover = setTimeout(() => failCall("lost"), RECOVERY_TIMEOUT_MS);
     }
   }
 
-  if (state === 'failed' && phase === 'connecting') {
-    failCall('connect');
+  if (state === "failed" && phase === "connecting") {
+    failCall("connect");
   }
 };
 
@@ -258,7 +281,7 @@ const createPeer = async (role) => {
   closePeer();
   const iceServers = await loadIceServers();
   pc = new RTCPeerConnection({ iceServers });
-  negotiation = { polite: role === 'callee', makingOffer: false, ignoreOffer: false, settingAnswer: false };
+  negotiation = { polite: role === "callee", makingOffer: false, ignoreOffer: false, settingAnswer: false };
   remoteStream = new MediaStream();
   set({ remoteStream, remoteVersion: get().remoteVersion + 1 });
 
@@ -278,7 +301,7 @@ const createPeer = async (role) => {
       await thisPc.setLocalDescription();
       if (thisPc === pc) sendSignal({ description: thisPc.localDescription.toJSON() });
     } catch (error) {
-      console.warn('negotiation failed', error);
+      console.warn("negotiation failed", error);
     } finally {
       if (negotiation) negotiation.makingOffer = false;
     }
@@ -288,9 +311,9 @@ const createPeer = async (role) => {
 
   // The caller defines the media sections; the callee fills them in when the
   // offer arrives (attachLocalTracks).
-  if (role === 'caller') {
-    pc.addTransceiver(localStream?.getAudioTracks()[0] ?? 'audio', { direction: 'sendrecv' });
-    pc.addTransceiver(localStream?.getVideoTracks()[0] ?? 'video', { direction: 'sendrecv' });
+  if (role === "caller") {
+    pc.addTransceiver(localStream?.getAudioTracks()[0] ?? "audio", { direction: "sendrecv" });
+    pc.addTransceiver(localStream?.getVideoTracks()[0] ?? "video", { direction: "sendrecv" });
     tracksAttached = true;
   }
 
@@ -304,14 +327,14 @@ const attachLocalTracks = async () => {
   tracksAttached = true;
   for (const t of pc.getTransceivers()) {
     const kind = t.receiver.track?.kind;
-    const track = kind === 'audio' ? localStream?.getAudioTracks()[0] : localStream?.getVideoTracks()[0];
-    t.direction = 'sendrecv';
+    const track = kind === "audio" ? localStream?.getAudioTracks()[0] : localStream?.getVideoTracks()[0];
+    t.direction = "sendrecv";
     await t.sender.replaceTrack(track ?? null);
   }
 };
 
 const handleSignal = async (data) => {
-  if (!data || typeof data !== 'object') return;
+  if (!data || typeof data !== "object") return;
 
   if (data.media) {
     set({ peerMicOn: !!data.media.mic, peerCamOn: !!data.media.cam });
@@ -322,7 +345,7 @@ const handleSignal = async (data) => {
   if (data.restart) {
     const call = get().call;
     if (!call) return;
-    setCall({ phase: 'connecting' });
+    setCall({ phase: "connecting" });
     await createPeer(call.role);
     armConnectTimeout();
     return;
@@ -336,16 +359,17 @@ const handleSignal = async (data) => {
   try {
     if (data.description) {
       const description = data.description;
-      const readyForOffer = !negotiation.makingOffer && (pc.signalingState === 'stable' || negotiation.settingAnswer);
-      const offerCollision = description.type === 'offer' && !readyForOffer;
+      const readyForOffer =
+        !negotiation.makingOffer && (pc.signalingState === "stable" || negotiation.settingAnswer);
+      const offerCollision = description.type === "offer" && !readyForOffer;
       negotiation.ignoreOffer = !negotiation.polite && offerCollision;
       if (negotiation.ignoreOffer) return;
 
-      negotiation.settingAnswer = description.type === 'answer';
+      negotiation.settingAnswer = description.type === "answer";
       await pc.setRemoteDescription(description);
       negotiation.settingAnswer = false;
 
-      if (description.type === 'offer') {
+      if (description.type === "offer") {
         await attachLocalTracks();
         await pc.setLocalDescription();
         sendSignal({ description: pc.localDescription.toJSON() });
@@ -358,13 +382,13 @@ const handleSignal = async (data) => {
       }
     }
   } catch (error) {
-    console.warn('signal handling failed', error);
+    console.warn("signal handling failed", error);
   }
 };
 
 const armConnectTimeout = () => {
-  clearTimer('connect');
-  timers.connect = setTimeout(() => failCall('connect'), CONNECT_TIMEOUT_MS);
+  clearTimer("connect");
+  timers.connect = setTimeout(() => failCall("connect"), CONNECT_TIMEOUT_MS);
 };
 
 // ---------------------------------------------------------------- teardown
@@ -384,8 +408,8 @@ const showEnded = (endReason) => {
   const call = get().call;
   if (!call) return;
   teardown();
-  if (call.phase === 'active' || call.phase === 'reconnecting' || call.phase === 'connecting') playEndTone();
-  setCall({ phase: 'ended', endReason });
+  if (call.phase === "active" || call.phase === "reconnecting" || call.phase === "connecting") playEndTone();
+  setCall({ phase: "ended", endReason });
   scheduleDismiss(ENDED_SCREEN_MS);
 };
 
@@ -394,34 +418,34 @@ const scheduleDismiss = (ms) => {
   const endedAt = Date.now();
   setCall({ endedAt });
   timers.dismiss = setTimeout(() => {
-    if (get().call?.phase === 'ended' && get().call?.endedAt === endedAt) set({ call: null });
+    if (get().call?.phase === "ended" && get().call?.endedAt === endedAt) set({ call: null });
   }, ms);
 };
 
 const failCall = (failure) => {
   const call = get().call;
-  if (!call || call.phase === 'ended' || call.phase === 'failed') return;
-  if (call.callId) ack('call:end', { callId: call.callId });
+  if (!call || call.phase === "ended" || call.phase === "failed") return;
+  if (call.callId) ack("call:end", { callId: call.callId });
   teardown();
   playEndTone();
-  setCall({ phase: 'failed', failure });
+  setCall({ phase: "failed", failure });
 };
 
 const showError = (error) => {
   teardown();
-  setCall({ phase: 'error', error: error instanceof CallError ? error.code : 'media_failed' });
+  setCall({ phase: "error", error: error instanceof CallError ? error.code : "media_failed" });
 };
 
 // ---------------------------------------------------------------- actions
 
 export const startCall = async (peer, kind) => {
-  if (get().call && !['ended', 'failed', 'error'].includes(get().call.phase)) return;
+  if (get().call && !["ended", "failed", "error"].includes(get().call.phase)) return;
   clearAllTimers();
   set({
-    call: { phase: 'preparing', role: 'caller', kind, peer, callId: null },
+    call: { phase: "preparing", role: "caller", kind, peer, callId: null },
     micOn: true,
     camOn: false,
-    facingMode: 'user',
+    facingMode: "user",
     peerMicOn: true,
     peerCamOn: false,
     quality: null,
@@ -433,7 +457,7 @@ export const startCall = async (peer, kind) => {
     showError(error);
     return;
   }
-  if (get().call?.phase !== 'preparing') {
+  if (get().call?.phase !== "preparing") {
     // Hung up while the permission prompt was open.
     stopLocalMedia();
     return;
@@ -443,50 +467,61 @@ export const startCall = async (peer, kind) => {
   if (localStream.cameraUnavailable) setCall({ notice: `camera_${localStream.cameraUnavailable}` });
   if (camOn) refreshCanFlip();
 
-  const reply = await ack('call:invite', { to: peer._id, kind });
+  const reply = await ack("call:invite", { to: peer._id, kind });
   const call = get().call;
-  if (!call || call.phase !== 'preparing') {
+  if (!call || call.phase !== "preparing") {
     // Hung up while the invite was in flight.
-    if (reply.ok) ack('call:cancel', { callId: reply.callId });
+    if (reply.ok) ack("call:cancel", { callId: reply.callId });
     return;
   }
   if (!reply.ok) {
     teardown();
-    setCall({ phase: 'ended', endReason: reply.reason === 'offline' || reply.reason === 'timeout' ? 'not_connected' : reply.reason });
+    setCall({
+      phase: "ended",
+      endReason: reply.reason === "offline" || reply.reason === "timeout" ? "not_connected" : reply.reason,
+    });
     // These explain why nobody was rung, so leave them up a little longer.
     scheduleDismiss(ENDED_SCREEN_MS + 1500);
     return;
   }
 
-  setCall({ callId: reply.callId, phase: 'calling' });
-  startTone('ringback');
+  setCall({ callId: reply.callId, phase: "calling" });
+  startTone("ringback");
 };
 
 export const acceptCall = async ({ video }) => {
   const call = get().call;
-  if (!call || call.phase !== 'incoming') return;
+  if (!call || call.phase !== "incoming") return;
   stopTone();
-  setCall({ phase: 'connecting' });
+  setCall({ phase: "connecting" });
 
   try {
-    localStream = await getMedia(video ? 'video' : 'audio');
+    localStream = await getMedia(video ? "video" : "audio");
   } catch (error) {
     // Can't answer without a microphone. Free the caller rather than leaving
     // them ringing until the timeout.
-    ack('call:reject', { callId: call.callId });
+    ack("call:reject", { callId: call.callId });
     showError(error);
     return;
   }
   const camOn = localStream.getVideoTracks().length > 0;
-  set({ localStream, camOn, micOn: true, facingMode: 'user', peerMicOn: true, peerCamOn: false, quality: null });
+  set({
+    localStream,
+    camOn,
+    micOn: true,
+    facingMode: "user",
+    peerMicOn: true,
+    peerCamOn: false,
+    quality: null,
+  });
   if (localStream.cameraUnavailable) setCall({ notice: `camera_${localStream.cameraUnavailable}` });
   if (camOn) refreshCanFlip();
 
-  await createPeer('callee');
-  const reply = await ack('call:accept', { callId: call.callId });
+  await createPeer("callee");
+  const reply = await ack("call:accept", { callId: call.callId });
   if (get().call?.callId !== call.callId) return;
   if (!reply.ok) {
-    showEnded(reply.reason === 'answered_elsewhere' ? 'answered_elsewhere' : 'gone');
+    showEnded(reply.reason === "answered_elsewhere" ? "answered_elsewhere" : "gone");
     return;
   }
   armConnectTimeout();
@@ -495,9 +530,9 @@ export const acceptCall = async ({ video }) => {
 
 export const declineCall = () => {
   const call = get().call;
-  if (!call || call.phase !== 'incoming') return;
+  if (!call || call.phase !== "incoming") return;
   stopTone();
-  ack('call:reject', { callId: call.callId });
+  ack("call:reject", { callId: call.callId });
   set({ call: null });
 };
 
@@ -505,23 +540,23 @@ export const hangUp = () => {
   const call = get().call;
   if (!call) return;
   switch (call.phase) {
-    case 'preparing':
+    case "preparing":
       teardown();
       set({ call: null });
       return;
-    case 'calling':
-    case 'ringing':
-      ack('call:cancel', { callId: call.callId });
-      showEnded('cancelled_by_me');
+    case "calling":
+    case "ringing":
+      ack("call:cancel", { callId: call.callId });
+      showEnded("cancelled_by_me");
       return;
-    case 'incoming':
+    case "incoming":
       declineCall();
       return;
-    case 'connecting':
-    case 'active':
-    case 'reconnecting':
-      ack('call:end', { callId: call.callId });
-      showEnded('hangup_by_me');
+    case "connecting":
+    case "active":
+    case "reconnecting":
+      ack("call:end", { callId: call.callId });
+      showEnded("hangup_by_me");
       return;
     default:
       teardown();
@@ -532,7 +567,7 @@ export const hangUp = () => {
 /** Closes a finished/failed/error screen. */
 export const dismissCall = () => {
   const phase = get().call?.phase;
-  if (phase === 'ended' || phase === 'failed' || phase === 'error') {
+  if (phase === "ended" || phase === "failed" || phase === "error") {
     teardown();
     set({ call: null });
   }
@@ -583,13 +618,13 @@ export const toggleCamera = async () => {
     sendMediaState();
     refreshCanFlip();
   } catch (error) {
-    setCall({ notice: error.name === 'NotAllowedError' ? 'camera_denied' : 'camera_missing' });
+    setCall({ notice: error.name === "NotAllowedError" ? "camera_denied" : "camera_missing" });
   }
 };
 
 export const flipCamera = async () => {
   if (!get().camOn || !localStream) return;
-  const facingMode = get().facingMode === 'user' ? 'environment' : 'user';
+  const facingMode = get().facingMode === "user" ? "environment" : "user";
   try {
     // Stop the old track first: many phones can't open both cameras at once.
     localStream.getVideoTracks().forEach((t) => {
@@ -603,7 +638,7 @@ export const flipCamera = async () => {
     set({ facingMode, localStream: new MediaStream(localStream.getTracks()) });
     localStream = get().localStream;
   } catch {
-    setCall({ notice: 'camera_missing' });
+    setCall({ notice: "camera_missing" });
     set({ camOn: false });
     sendMediaState();
   }
@@ -616,11 +651,17 @@ export const rejoinCall = async () => {
   const info = get().resumable;
   if (!info) return;
   set({ resumable: null });
-  const reply = await ack('call:resume', { callId: info.callId });
+  const reply = await ack("call:resume", { callId: info.callId });
   if (!reply.ok) return;
 
   set({
-    call: { phase: 'connecting', role: info.role, kind: info.kind, callId: info.callId, peer: resolvePeer(info.peerId) },
+    call: {
+      phase: "connecting",
+      role: info.role,
+      kind: info.kind,
+      callId: info.callId,
+      peer: resolvePeer(info.peerId),
+    },
     micOn: true,
     camOn: false,
     peerMicOn: true,
@@ -629,7 +670,7 @@ export const rejoinCall = async () => {
   try {
     localStream = await getMedia(info.kind);
   } catch (error) {
-    ack('call:end', { callId: info.callId });
+    ack("call:end", { callId: info.callId });
     showError(error);
     return;
   }
@@ -644,77 +685,78 @@ export const leaveResumableCall = async () => {
   const info = get().resumable;
   set({ resumable: null });
   if (!info) return;
-  const reply = await ack('call:resume', { callId: info.callId });
-  if (reply.ok) ack('call:end', { callId: info.callId });
+  const reply = await ack("call:resume", { callId: info.callId });
+  if (reply.ok) ack("call:end", { callId: info.callId });
 };
 
 // ---------------------------------------------------------------- socket
 
 const listeners = {
-  'call:incoming': ({ callId, kind, caller }) => {
-    if (get().call && !['ended', 'failed', 'error'].includes(get().call.phase)) return;
+  "call:incoming": ({ callId, kind, caller }) => {
+    if (get().call && !["ended", "failed", "error"].includes(get().call.phase)) return;
     clearAllTimers();
-    set({ call: { phase: 'incoming', role: 'callee', callId, kind, peer: caller } });
-    socket.emit('call:ringing', { callId });
-    startTone('ringtone');
+    set({ call: { phase: "incoming", role: "callee", callId, kind, peer: caller } });
+    socket.emit("call:ringing", { callId });
+    startTone("ringtone");
   },
 
-  'call:ringing': ({ callId }) => {
-    if (currentCallId() === callId && get().call.phase === 'calling') setCall({ phase: 'ringing' });
+  "call:ringing": ({ callId }) => {
+    if (currentCallId() === callId && get().call.phase === "calling") setCall({ phase: "ringing" });
   },
 
-  'call:accepted': async ({ callId }) => {
+  "call:accepted": async ({ callId }) => {
     if (currentCallId() !== callId) return;
     stopTone();
-    setCall({ phase: 'connecting' });
-    await createPeer('caller');
+    setCall({ phase: "connecting" });
+    await createPeer("caller");
     armConnectTimeout();
     acquireWakeLock();
   },
 
-  'call:answered-elsewhere': ({ callId }) => {
-    if (currentCallId() === callId && get().call.phase === 'incoming') {
+  "call:answered-elsewhere": ({ callId }) => {
+    if (currentCallId() === callId && get().call.phase === "incoming") {
       stopTone();
       set({ call: null });
     }
   },
 
-  'call:ended': ({ callId, reason }) => {
+  "call:ended": ({ callId, reason }) => {
     const call = get().call;
     if (!call || call.callId !== callId) return;
-    if (call.phase === 'incoming') {
+    if (call.phase === "incoming") {
       stopTone();
       set({ call: null });
       return;
     }
-    if (call.phase === 'failed' || call.phase === 'error') return;
+    if (call.phase === "failed" || call.phase === "error") return;
     showEnded(reason);
   },
 
-  'call:signal': ({ callId, data }) => {
+  "call:signal": ({ callId, data }) => {
     if (currentCallId() === callId) handleSignal(data);
   },
 
-  'call:peer-reconnecting': ({ callId }) => {
+  "call:peer-reconnecting": ({ callId }) => {
     if (currentCallId() === callId) set({ peerReconnecting: true });
   },
 
-  'call:peer-reconnected': ({ callId }) => {
+  "call:peer-reconnected": ({ callId }) => {
     if (currentCallId() === callId) set({ peerReconnecting: false });
   },
 
-  'call:resumable': (info) => {
+  "call:resumable": (info) => {
     if (currentCallId() === info.callId) return;
-    if (info.state !== 'active') return;
+    if (info.state !== "active") return;
     set({ resumable: info });
   },
 
   // Socket.IO reconnected (new socket id): reclaim the call from it.
   connect: async () => {
     const call = get().call;
-    if (!call?.callId || !['calling', 'ringing', 'connecting', 'active', 'reconnecting'].includes(call.phase)) return;
-    const reply = await ack('call:resume', { callId: call.callId });
-    if (!reply.ok && currentCallId() === call.callId) showEnded('disconnected');
+    if (!call?.callId || !["calling", "ringing", "connecting", "active", "reconnecting"].includes(call.phase))
+      return;
+    const reply = await ack("call:resume", { callId: call.callId });
+    if (!reply.ok && currentCallId() === call.callId) showEnded("disconnected");
   },
 };
 

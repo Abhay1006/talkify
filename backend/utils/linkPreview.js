@@ -30,10 +30,21 @@ const allowPrivateForTests =
 
 const blocked = new net.BlockList();
 for (const [addr, prefix] of [
-  ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8],
-  ["169.254.0.0", 16], ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.0.2.0", 24],
-  ["192.88.99.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15], ["198.51.100.0", 24],
-  ["203.0.113.0", 24], ["224.0.0.0", 4], ["240.0.0.0", 4],
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.88.99.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
 ]) {
   blocked.addSubnet(addr, prefix, "ipv4");
 }
@@ -41,8 +52,14 @@ for (const [addr, prefix] of [
   // ::ffff:0:0/96 (IPv4-mapped) is deliberately absent: net.BlockList would
   // treat it as covering every IPv4 address. Mapped addresses are unwrapped
   // and checked as IPv4 in isPublicAddress instead.
-  ["::", 128], ["::1", 128], ["64:ff9b::", 96], ["100::", 64],
-  ["2001:db8::", 32], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8],
+  ["::", 128],
+  ["::1", 128],
+  ["64:ff9b::", 96],
+  ["100::", 64],
+  ["2001:db8::", 32],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8],
 ]) {
   blocked.addSubnet(addr, prefix, "ipv6");
 }
@@ -119,7 +136,10 @@ const fetchOnce = (url, deadline) =>
           res.resume();
           return resolve({ redirect: new URL(res.headers.location, url).toString() });
         }
-        if (res.statusCode !== 200 || !/text\/html|application\/xhtml/i.test(res.headers["content-type"] ?? "")) {
+        if (
+          res.statusCode !== 200 ||
+          !/text\/html|application\/xhtml/i.test(res.headers["content-type"] ?? "")
+        ) {
           res.resume();
           return resolve(null);
         }
@@ -163,8 +183,13 @@ export const parsePreview = (html) => {
   const meta = {};
   for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
     const attr = (name) => tag.match(new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
-    const key = (attr("property") ?? attr("name"))?.slice(2).find((v) => v !== undefined)?.toLowerCase();
-    const content = attr("content")?.slice(2).find((v) => v !== undefined);
+    const key = (attr("property") ?? attr("name"))
+      ?.slice(2)
+      .find((v) => v !== undefined)
+      ?.toLowerCase();
+    const content = attr("content")
+      ?.slice(2)
+      .find((v) => v !== undefined);
     if (key && content !== undefined && !(key in meta)) meta[key] = content;
   }
   const titleTag = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];

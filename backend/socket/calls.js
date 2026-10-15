@@ -1,10 +1,9 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
 import User from "../models/user.model.js";
-import ChatRequest from "../models/chatRequest.model.js";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
-import { checkCanMessage } from "../utils/messagePermissions.js";
+import { assertCanReach, findOrCreateConversation, findRequestBetween } from "../utils/relationships.js";
 import { notifyUser } from "../utils/push.js";
 
 // 1:1 voice/video call signaling. Media goes peer-to-peer over WebRTC; this
@@ -69,28 +68,19 @@ const rateLimited = (userId) => {
 /**
  * Calls are stricter than messages: a text message to a stranger is how a chat
  * request starts, but nobody should be able to ring a phone before the request
- * has been accepted.
+ * has been accepted. Mirrors who counts as a contact for presence: an accepted
+ * request, or (for chats that predate requests) an existing conversation.
  */
 const checkCanCall = async (callerId, calleeId) => {
-  const permission = await checkCanMessage(callerId, calleeId);
-  if (!permission.ok) return permission;
-
-  const accepted = await ChatRequest.exists({
-    status: "accepted",
-    $or: [
-      { senderId: callerId, receiverId: calleeId },
-      { senderId: calleeId, receiverId: callerId },
-    ],
-  });
-  if (!accepted) return { ok: false, error: "forbidden" };
-
-  const blockedConversation = await Conversation.exists({
-    participants: { $all: [callerId, calleeId] },
-    status: "blocked",
-  });
-  if (blockedConversation) return { ok: false, error: "forbidden" };
-
-  return { ok: true };
+  try {
+    // Valid, existing, different user with no block in either direction.
+    await assertCanReach(callerId, calleeId);
+  } catch {
+    return false;
+  }
+  const request = await findRequestBetween(callerId, calleeId);
+  if (request) return request.status === "accepted";
+  return Boolean(await Conversation.exists({ participants: { $all: [callerId, calleeId] } }));
 };
 
 const peerOf = (call, userId) => (userId === call.callerId ? call.calleeId : call.callerId);
@@ -111,18 +101,14 @@ const writeCallHistory = async (call, status) => {
   const durationMs = call.answeredAt ? Date.now() - call.answeredAt : 0;
   const { callerId, calleeId } = call;
 
-  let conversation = await Conversation.findOne({ participants: { $all: [callerId, calleeId] } });
-  if (!conversation) {
-    conversation = await Conversation.create({ participants: [callerId, calleeId] });
-  }
-
+  const conversation = await findOrCreateConversation(callerId, calleeId);
   const message = await Message.create({
     senderId: callerId,
     receiverId: calleeId,
     call: { kind: call.kind, status, durationMs },
   });
-  conversation.messages.push(message._id);
-  await conversation.save();
+  // Keeps the contact list ordered by latest activity, as sendMessage does.
+  await Conversation.updateOne({ _id: conversation._id }, { $currentDate: { updatedAt: true } });
 
   emitToUserSockets(callerId, "newMessage", message);
   emitToUserSockets(calleeId, "newMessage", message);
@@ -183,8 +169,7 @@ const handlers = {
     if (callIdByUser.has(callerId)) return { ok: false, reason: "already_in_call" };
     if (rateLimited(callerId)) return { ok: false, reason: "rate_limited" };
 
-    const permission = await checkCanCall(callerId, calleeId);
-    if (!permission.ok) return { ok: false, reason: "forbidden" };
+    if (!(await checkCanCall(callerId, calleeId))) return { ok: false, reason: "forbidden" };
 
     // Re-check after the awaits: another invite may have landed meanwhile.
     if (callIdByUser.has(callerId)) return { ok: false, reason: "already_in_call" };
@@ -263,8 +248,7 @@ const handlers = {
     if (call.state !== "ringing") return { ok: false, reason: "answered_elsewhere" };
 
     // Blocks can land while a call is ringing.
-    const permission = await checkCanCall(call.callerId, call.calleeId);
-    if (!permission.ok) {
+    if (!(await checkCanCall(call.callerId, call.calleeId))) {
       finishCall(call, { reason: "ended", status: "missed", log: false });
       return { ok: false, reason: "gone" };
     }

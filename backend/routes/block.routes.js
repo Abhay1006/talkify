@@ -1,11 +1,15 @@
 import express from "express";
 import protectRoute from "../middleware/protectRoute.js";
 import { blockUser, getBlockedUsers, unblockUser } from "../controllers/block.controller.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
-router.post("/:userId", protectRoute, blockUser);
-router.delete("/:userId", protectRoute, unblockUser);
-router.get("/list", protectRoute, getBlockedUsers);
+router.use(protectRoute);
+
+// Registered before /:userId so "list" is never mistaken for a user id.
+router.get("/list", asyncHandler(getBlockedUsers));
+router.post("/:userId", asyncHandler(blockUser));
+router.delete("/:userId", asyncHandler(unblockUser));
 
 export default router;

@@ -1,11 +1,14 @@
-import e from "express";
+import express from "express";
 import protectRoute from "../middleware/protectRoute.js";
 import { getPushConfig, subscribe, unsubscribe } from "../controllers/push.controller.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
-const router = e.Router();
+const router = express.Router();
 
-router.get("/config", protectRoute, getPushConfig);
-router.post("/subscribe", protectRoute, subscribe);
-router.post("/unsubscribe", protectRoute, unsubscribe);
+router.use(protectRoute);
+
+router.get("/config", getPushConfig);
+router.post("/subscribe", asyncHandler(subscribe));
+router.post("/unsubscribe", asyncHandler(unsubscribe));
 
 export default router;

@@ -6,15 +6,16 @@
 //   [{"urls":"stun:stun.l.google.com:19302"},
 //    {"urls":"turn:turn.example.com:3478","username":"u","credential":"p"}]
 
-const DEFAULT_ICE_SERVERS = [
-  { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
-];
+const DEFAULT_ICE_SERVERS = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }];
 
 const loadIceServers = () => {
   if (!process.env.ICE_SERVERS) return DEFAULT_ICE_SERVERS;
   try {
     const parsed = JSON.parse(process.env.ICE_SERVERS);
-    if (Array.isArray(parsed) && parsed.every((s) => s && (typeof s.urls === "string" || Array.isArray(s.urls)))) {
+    if (
+      Array.isArray(parsed) &&
+      parsed.every((s) => s && (typeof s.urls === "string" || Array.isArray(s.urls)))
+    ) {
       return parsed;
     }
   } catch {

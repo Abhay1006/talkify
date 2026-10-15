@@ -1,24 +1,32 @@
+import mongoose from "mongoose";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
-import ChatRequest from "../models/chatRequest.model.js";
-import mongoose from "mongoose";
 import { emitToUser, isUserOnline } from "../socket/socket.js";
-import { checkCanMessage } from "../utils/messagePermissions.js";
+import { HttpError, badRequest, forbidden, notFound } from "../utils/httpError.js";
+import { assertCanReach, authorizeSend, findOrCreateConversation } from "../utils/relationships.js";
 import { processImage, ImageRejectedError } from "../utils/imageProcessing.js";
 import mediaStorage from "../storage/mediaStorage.js";
 import { sniffAudio, parseWaveform, MAX_VOICE_MS, MIN_VOICE_MS } from "../utils/audio.js";
 import { fetchLinkPreview, firstUrl } from "../utils/linkPreview.js";
 import { notifyUser, messagePreview } from "../utils/push.js";
 
-const MAX_MESSAGE_LENGTH = 4000;
+export const MAX_MESSAGE_LENGTH = 4000;
+export const MESSAGE_PAGE_SIZE = 50;
 // Long enough to fix a typo, short enough that history stays trustworthy.
 export const EDIT_WINDOW_MS = Number(process.env.MESSAGE_EDIT_WINDOW_MS) || 15 * 60 * 1000;
 
-// Pushes a message (or an updated one) to both people's open tabs.
+// Pushes a message (new or updated) to both people's open tabs. The sender's
+// other tabs and devices need it too.
 const broadcast = (message, event) => {
   emitToUser(message.receiverId, event, message);
   emitToUser(message.senderId, event, message);
 };
+
+// Bumps updatedAt so the contact list stays ordered by latest activity. The
+// message itself is no longer pushed onto an ever-growing array inside the
+// conversation document — that ran toward MongoDB's 16 MB document limit.
+const touchConversation = (conversation) =>
+  Conversation.updateOne({ _id: conversation._id }, { $currentDate: { updatedAt: true } });
 
 // Fetches a preview card for the first link, then updates the message in
 // place. Runs after the response: a slow site never delays sending.
@@ -58,151 +66,86 @@ const notifyIfOffline = (message, sender) => {
   );
 };
 
-/**
- * Finds or opens the conversation between sender and receiver, applying the
- * chat-request rules. Assumes checkCanMessage has already passed.
- *
- * Returns { ok: true, conversation } or { ok: false, status, error }.
- */
-const resolveConversation = async (senderId, receiverId) => {
-  let conversation = await Conversation.findOne({
-    participants: { $all: [senderId, receiverId] },
-  });
+// Everything after a message has been authorised and built: save it, keep the
+// contact list ordered, deliver it, and start the follow-ups.
+const deliver = async (message, { req, res, conversation, openedRequest }) => {
+  // Media messages are saved by their handler first, so their files can be
+  // cleaned up if the save fails.
+  if (message.isNew) await message.save();
+  await touchConversation(conversation);
 
-  if (!conversation) {
-    conversation = await Conversation.create({
-      participants: [senderId, receiverId],
-    });
-  }
+  broadcast(message, "newMessage");
+  if (openedRequest) emitToUser(message.receiverId, "contactsUpdated");
 
-  if (conversation.status === "blocked") {
-    return { ok: false, status: 403, error: "This conversation is unavailable" };
-  }
+  res.status(201).json(message);
 
-  const existingRequest = await ChatRequest.findOne({
-    $or: [
-      { senderId, receiverId },
-      { senderId: receiverId, receiverId: senderId },
-    ],
-  });
-
-  // A rejected request means the recipient has already declined contact, so
-  // a new message must not silently reopen the thread.
-  if (existingRequest?.status === "rejected") {
-    return { ok: false, status: 403, error: "This conversation is unavailable" };
-  }
-  if (!existingRequest) {
-    // upsert, not create: two messages sent in quick succession would
-    // otherwise race and trip the unique index on { senderId, receiverId }.
-    await ChatRequest.updateOne(
-      { senderId, receiverId },
-      { $setOnInsert: { senderId, receiverId, status: "pending" } },
-      { upsert: true }
-    );
-  }
-
-  return { ok: true, conversation };
+  notifyIfOffline(message, req.user);
+  if (message.body) attachLinkPreview(message);
 };
 
 export const sendMessage = async (req, res) => {
-  try {
-    const { message } = req.body;
-    const { id: receiverId } = req.params;
-    const senderId = req.user._id;
+  const { message } = req.body ?? {};
+  const { id: receiverId } = req.params;
+  const senderId = req.user._id;
 
-    if (typeof message !== "string" || !message.trim()) {
-      return res.status(400).json({ error: "Message cannot be empty" });
-    }
-    if (message.length > MAX_MESSAGE_LENGTH) {
-      return res.status(400).json({ error: `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters` });
-    }
-
-    const permission = await checkCanMessage(senderId, receiverId);
-    if (!permission.ok) {
-      return res.status(permission.status).json({ error: permission.error });
-    }
-
-    const resolved = await resolveConversation(senderId, receiverId);
-    if (!resolved.ok) {
-      return res.status(resolved.status).json({ error: resolved.error });
-    }
-    const { conversation } = resolved;
-
-    const newMessage = new Message({
-      senderId,
-      receiverId,
-      body: message.trim(),
-    });
-
-    conversation.messages.push(newMessage._id);
-
-    await Promise.all([conversation.save(), newMessage.save()]);
-
-    emitToUser(receiverId, "newMessage", newMessage);
-
-    res.status(201).json(newMessage);
-
-    notifyIfOffline(newMessage, req.user);
-    attachLinkPreview(newMessage);
-  } catch (error) {
-    console.error("Error in sending message", error);
-    res.status(500).json({ error: "Internal server error" });
+  if (typeof message !== "string" || !message.trim()) {
+    throw badRequest("Message cannot be empty");
   }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    throw badRequest(`Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`);
+  }
+
+  // Throws for blocks, declined requests, and messages sent while a request
+  // is still pending. The accept step used to exist only in the UI.
+  const { openedRequest } = await authorizeSend(senderId, receiverId);
+  const conversation = await findOrCreateConversation(senderId, receiverId);
+
+  const newMessage = new Message({ senderId, receiverId, body: message.trim() });
+  await deliver(newMessage, { req, res, conversation, openedRequest });
 };
 
 // multipart/form-data: an `image` file field and an optional `caption`.
 export const sendImageMessage = async (req, res) => {
-  // Objects written to storage by this request. Removed again if the message
-  // never gets saved, so failed sends don't leave orphaned files behind.
-  const stored = [];
+  const { id: receiverId } = req.params;
+  const senderId = req.user._id;
+  const caption = typeof req.body?.caption === "string" ? req.body.caption.trim() : "";
 
+  if (!req.file) throw badRequest("No image attached");
+  if (caption.length > MAX_MESSAGE_LENGTH) {
+    throw badRequest(`Caption cannot exceed ${MAX_MESSAGE_LENGTH} characters`);
+  }
+
+  // Cheap checks first (no side effects), so blocked senders don't cost a
+  // decode; the chat-request rules run after the image is known to be good.
+  await assertCanReach(senderId, receiverId);
+
+  let processed;
   try {
-    const { id: receiverId } = req.params;
-    const senderId = req.user._id;
-    const caption = typeof req.body?.caption === "string" ? req.body.caption.trim() : "";
+    processed = await processImage(req.file.buffer);
+  } catch (error) {
+    if (error instanceof ImageRejectedError) throw new HttpError(415, error.message);
+    throw error;
+  }
 
-    if (!req.file) {
-      return res.status(400).json({ error: "No image attached" });
-    }
-    if (caption.length > MAX_MESSAGE_LENGTH) {
-      return res.status(400).json({ error: `Caption cannot exceed ${MAX_MESSAGE_LENGTH} characters` });
-    }
+  const { openedRequest } = await authorizeSend(senderId, receiverId);
+  const conversation = await findOrCreateConversation(senderId, receiverId);
 
-    // Authorize before spending CPU on decoding the image.
-    const permission = await checkCanMessage(senderId, receiverId);
-    if (!permission.ok) {
-      return res.status(permission.status).json({ error: permission.error });
-    }
+  // Read access is decided from this metadata by GET /api/media/:id.
+  const metadata = {
+    participants: [senderId, receiverId],
+    uploaderId: senderId,
+    conversationId: conversation._id,
+  };
 
-    let processed;
-    try {
-      processed = await processImage(req.file.buffer);
-    } catch (error) {
-      if (error instanceof ImageRejectedError) {
-        return res.status(415).json({ error: error.message });
-      }
-      throw error;
-    }
-
-    const resolved = await resolveConversation(senderId, receiverId);
-    if (!resolved.ok) {
-      return res.status(resolved.status).json({ error: resolved.error });
-    }
-    const { conversation } = resolved;
-
-    // Read access is decided from this metadata by GET /api/media/:id.
-    const metadata = {
-      participants: [senderId, receiverId],
-      uploaderId: senderId,
-      conversationId: conversation._id,
-    };
-
+  // Objects written by this request, removed again if the message never gets
+  // saved, so failed sends don't leave orphaned files behind.
+  const stored = [];
+  try {
     const fullId = await mediaStorage.putObject(processed.full, {
       contentType: processed.contentType,
       metadata: { ...metadata, variant: "full" },
     });
     stored.push(fullId);
-
     const thumbId = await mediaStorage.putObject(processed.thumb, {
       contentType: processed.contentType,
       metadata: { ...metadata, variant: "thumb" },
@@ -223,68 +166,44 @@ export const sendImageMessage = async (req, res) => {
         placeholder: processed.placeholder,
       },
     });
-
     await newMessage.save();
     stored.length = 0; // owned by the message from here on
 
-    conversation.messages.push(newMessage._id);
-    await conversation.save();
-
-    emitToUser(receiverId, "newMessage", newMessage);
-
-    res.status(201).json(newMessage);
-
-    notifyIfOffline(newMessage, req.user);
-    if (caption) attachLinkPreview(newMessage);
-  } catch (error) {
-    console.error("Error in sending image message", error);
+    await deliver(newMessage, { req, res, conversation, openedRequest });
+  } finally {
     await Promise.allSettled(stored.map((id) => mediaStorage.deleteObject(id)));
-    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // multipart/form-data: an `audio` file field, `durationMs` and `waveform`.
 export const sendVoiceMessage = async (req, res) => {
-  let storedId = null;
+  const { id: receiverId } = req.params;
+  const senderId = req.user._id;
 
+  if (!req.file) throw badRequest("No recording attached");
+  const durationMs = Number(req.body?.durationMs);
+  if (!Number.isFinite(durationMs) || durationMs < MIN_VOICE_MS || durationMs > MAX_VOICE_MS) {
+    throw badRequest("Voice messages must be between 0.3 seconds and 5 minutes");
+  }
+
+  await assertCanReach(senderId, receiverId);
+
+  const contentType = sniffAudio(req.file.buffer);
+  if (!contentType) throw new HttpError(415, "That recording isn't a supported audio format");
+
+  const { openedRequest } = await authorizeSend(senderId, receiverId);
+  const conversation = await findOrCreateConversation(senderId, receiverId);
+
+  let storedId = await mediaStorage.putObject(req.file.buffer, {
+    contentType,
+    metadata: {
+      participants: [senderId, receiverId],
+      uploaderId: senderId,
+      conversationId: conversation._id,
+      variant: "voice",
+    },
+  });
   try {
-    const { id: receiverId } = req.params;
-    const senderId = req.user._id;
-
-    if (!req.file) {
-      return res.status(400).json({ error: "No recording attached" });
-    }
-    const durationMs = Number(req.body?.durationMs);
-    if (!Number.isFinite(durationMs) || durationMs < MIN_VOICE_MS || durationMs > MAX_VOICE_MS) {
-      return res.status(400).json({ error: "Voice messages must be between 0.3 seconds and 5 minutes" });
-    }
-
-    const permission = await checkCanMessage(senderId, receiverId);
-    if (!permission.ok) {
-      return res.status(permission.status).json({ error: permission.error });
-    }
-
-    const contentType = sniffAudio(req.file.buffer);
-    if (!contentType) {
-      return res.status(415).json({ error: "That recording isn't a supported audio format" });
-    }
-
-    const resolved = await resolveConversation(senderId, receiverId);
-    if (!resolved.ok) {
-      return res.status(resolved.status).json({ error: resolved.error });
-    }
-    const { conversation } = resolved;
-
-    storedId = await mediaStorage.putObject(req.file.buffer, {
-      contentType,
-      metadata: {
-        participants: [senderId, receiverId],
-        uploaderId: senderId,
-        conversationId: conversation._id,
-        variant: "voice",
-      },
-    });
-
     const newMessage = new Message({
       senderId,
       receiverId,
@@ -295,95 +214,89 @@ export const sendVoiceMessage = async (req, res) => {
         waveform: parseWaveform(req.body?.waveform),
       },
     });
-
     await newMessage.save();
     storedId = null; // owned by the message from here on
 
-    conversation.messages.push(newMessage._id);
-    await conversation.save();
-
-    emitToUser(receiverId, "newMessage", newMessage);
-    res.status(201).json(newMessage);
-
-    notifyIfOffline(newMessage, req.user);
-  } catch (error) {
-    console.error("Error in sending voice message", error);
+    await deliver(newMessage, { req, res, conversation, openedRequest });
+  } finally {
     if (storedId) await mediaStorage.deleteObject(storedId).catch(() => {});
-    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // Edit the text of your own message, within EDIT_WINDOW_MS of sending it.
 export const editMessage = async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const { message: text } = req.body ?? {};
+  const { messageId } = req.params;
+  const { message: text } = req.body ?? {};
 
-    if (!mongoose.isValidObjectId(messageId)) {
-      return res.status(404).json({ error: "Message not found" });
-    }
-    if (typeof text !== "string" || !text.trim()) {
-      return res.status(400).json({ error: "Message cannot be empty" });
-    }
-    if (text.length > MAX_MESSAGE_LENGTH) {
-      return res.status(400).json({ error: `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters` });
-    }
-
-    const message = await Message.findById(messageId);
-    // Someone else's message is "not found", not "forbidden": no probing.
-    if (!message || message.senderId.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ error: "Message not found" });
-    }
-    if (message.call || message.voice) {
-      return res.status(400).json({ error: "This message can't be edited" });
-    }
-    if (Date.now() - message.createdAt.getTime() > EDIT_WINDOW_MS) {
-      return res.status(403).json({ error: "Messages can only be edited for 15 minutes after sending" });
-    }
-
-    const permission = await checkCanMessage(req.user._id, message.receiverId);
-    if (!permission.ok) {
-      return res.status(permission.status).json({ error: permission.error });
-    }
-
-    const body = text.trim();
-    if (body === message.body) return res.status(200).json(message);
-
-    message.body = body;
-    message.editedAt = new Date();
-    await message.save();
-
-    broadcast(message, "messageUpdated");
-    res.status(200).json(message);
-
-    attachLinkPreview(message);
-  } catch (error) {
-    console.error("Error in editing message", error);
-    res.status(500).json({ error: "Internal server error" });
+  if (!mongoose.isValidObjectId(messageId)) throw notFound("Message not found");
+  if (typeof text !== "string" || !text.trim()) throw badRequest("Message cannot be empty");
+  if (text.length > MAX_MESSAGE_LENGTH) {
+    throw badRequest(`Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`);
   }
+
+  const message = await Message.findById(messageId);
+  // Someone else's message is "not found", not "forbidden": no probing.
+  if (!message || message.senderId.toString() !== req.user._id.toString()) {
+    throw notFound("Message not found");
+  }
+  if (message.call || message.voice) throw badRequest("This message can't be edited");
+  if (Date.now() - message.createdAt.getTime() > EDIT_WINDOW_MS) {
+    throw forbidden("Messages can only be edited for 15 minutes after sending");
+  }
+
+  await assertCanReach(req.user._id, message.receiverId);
+
+  const body = text.trim();
+  if (body === message.body) return res.status(200).json(message);
+
+  message.body = body;
+  message.editedAt = new Date();
+  await message.save();
+
+  broadcast(message, "messageUpdated");
+  res.status(200).json(message);
+
+  attachLinkPreview(message);
 };
 
+/**
+ * Returns one page of the conversation, oldest first within the page.
+ *
+ *   GET /api/messages/:id              newest page
+ *   GET /api/messages/:id?before=<id>  the page before that message
+ *
+ * Response: { messages, nextCursor } where nextCursor is null at the start of
+ * the conversation.
+ */
 export const getMessages = async (req, res) => {
-  try {
-    const { id: userToChat } = req.params;
-    const senderId = req.user._id;
+  const { id: otherId } = req.params;
+  const { before } = req.query;
+  const userId = req.user._id;
 
-    const permission = await checkCanMessage(senderId, userToChat);
-    if (!permission.ok) {
-      return res.status(permission.status).json({ error: permission.error });
-    }
+  await assertCanReach(userId, otherId);
 
-    const conversation = await Conversation.findOne({
-      participants: { $all: [senderId, userToChat] },
-    }).populate("messages");
-
-    if (!conversation) {
-      return res.status(200).json([]);
-    }
-
-    res.status(200).json(conversation.messages);
-  } catch (error) {
-    console.error("Error in getting messages", error);
-    res.status(500).json({ error: "Internal server error" });
+  if (before !== undefined && (typeof before !== "string" || !mongoose.isValidObjectId(before))) {
+    throw badRequest("Invalid cursor");
   }
+
+  const filter = {
+    $or: [
+      { senderId: userId, receiverId: otherId },
+      { senderId: otherId, receiverId: userId },
+    ],
+    ...(before && { _id: { $lt: new mongoose.Types.ObjectId(before) } }),
+  };
+
+  // Fetch one extra to learn whether an older page exists.
+  const page = await Message.find(filter)
+    .sort({ _id: -1 })
+    .limit(MESSAGE_PAGE_SIZE + 1);
+
+  const hasMore = page.length > MESSAGE_PAGE_SIZE;
+  const messages = page.slice(0, MESSAGE_PAGE_SIZE).reverse();
+
+  res.status(200).json({
+    messages,
+    nextCursor: hasMore ? messages[0]._id : null,
+  });
 };

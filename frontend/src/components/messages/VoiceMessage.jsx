@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, IconButton } from "@mui/material";
-import { FiPause, FiPlay } from "react-icons/fi";
+import { Pause, PlayArrow } from "@mui/icons-material";
 import { mediaUrl } from "../../utils/prepareImage";
 import { formatDuration } from "../../calls/callText";
 
@@ -18,9 +18,12 @@ const VoiceMessage = ({ voice, fromMe }) => {
 
   const bars = voice.waveform?.length ? voice.waveform : Array(BAR_COUNT).fill(0.3);
 
-  useEffect(() => () => {
-    if (nowPlaying === audioRef.current) nowPlaying = null;
-  }, []);
+  useEffect(
+    () => () => {
+      if (nowPlaying === audioRef.current) nowPlaying = null;
+    },
+    []
+  );
 
   const toggle = () => {
     const audio = audioRef.current;
@@ -47,22 +50,41 @@ const VoiceMessage = ({ voice, fromMe }) => {
   const unplayed = fromMe ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.25)";
 
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.25, width: { xs: 220, sm: 260 }, maxWidth: "100%" }}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        py: 0.25,
+        width: { xs: 220, sm: 260 },
+        maxWidth: "100%",
+      }}
+    >
       <audio
         ref={audioRef}
         src={mediaUrl(voice.mediaId)}
         preload="none"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onEnded={() => { setPlaying(false); setPosition(0); }}
+        onEnded={() => {
+          setPlaying(false);
+          setPosition(0);
+        }}
         onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
       />
       <IconButton
         onClick={toggle}
         aria-label={playing ? "Pause voice message" : "Play voice message"}
-        sx={{ width: 36, height: 36, flexShrink: 0, bgcolor: fromMe ? "rgba(255,255,255,0.2)" : "rgba(108,99,255,0.25)", color: "white", "&:hover": { bgcolor: fromMe ? "rgba(255,255,255,0.3)" : "rgba(108,99,255,0.4)" } }}
+        sx={{
+          width: 36,
+          height: 36,
+          flexShrink: 0,
+          bgcolor: fromMe ? "rgba(255,255,255,0.2)" : "rgba(108,99,255,0.25)",
+          color: "white",
+          "&:hover": { bgcolor: fromMe ? "rgba(255,255,255,0.3)" : "rgba(108,99,255,0.4)" },
+        }}
       >
-        {playing ? <FiPause size={16} /> : <FiPlay size={16} style={{ marginLeft: 2 }} />}
+        {playing ? <Pause sx={{ fontSize: 20 }} /> : <PlayArrow sx={{ fontSize: 20 }} />}
       </IconButton>
       <Box
         onClick={seek}
@@ -78,7 +100,15 @@ const VoiceMessage = ({ voice, fromMe }) => {
           if (e.key === "ArrowRight") audio.currentTime = Math.min(durationSec, audio.currentTime + 5);
           if (e.key === "ArrowLeft") audio.currentTime = Math.max(0, audio.currentTime - 5);
         }}
-        sx={{ flex: 1, display: "flex", alignItems: "center", gap: "2px", height: 28, cursor: "pointer", minWidth: 0 }}
+        sx={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          gap: "2px",
+          height: 28,
+          cursor: "pointer",
+          minWidth: 0,
+        }}
       >
         {bars.map((level, i) => (
           <Box
@@ -93,7 +123,17 @@ const VoiceMessage = ({ voice, fromMe }) => {
           />
         ))}
       </Box>
-      <Box component="span" sx={{ fontSize: "0.7rem", fontVariantNumeric: "tabular-nums", opacity: 0.85, flexShrink: 0, minWidth: 30, textAlign: "right" }}>
+      <Box
+        component="span"
+        sx={{
+          fontSize: "0.7rem",
+          fontVariantNumeric: "tabular-nums",
+          opacity: 0.85,
+          flexShrink: 0,
+          minWidth: 30,
+          textAlign: "right",
+        }}
+      >
         {formatDuration((playing || position > 0 ? position : durationSec) * 1000)}
       </Box>
     </Box>

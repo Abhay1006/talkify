@@ -25,8 +25,7 @@ const getBucket = () => {
   return bucket;
 };
 
-const toObjectId = (id) =>
-  mongoose.isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : null;
+const toObjectId = (id) => (mongoose.isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : null);
 
 /**
  * Stores `buffer` and resolves to the new object's id (string).

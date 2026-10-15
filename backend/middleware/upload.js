@@ -27,4 +27,3 @@ const makeUpload = (field, maxBytes, tooLargeMessage) => {
 export const uploadImage = makeUpload("image", MAX_UPLOAD_BYTES, "Images must be 2 MB or smaller");
 
 export const uploadAudio = makeUpload("audio", MAX_VOICE_BYTES, "Voice messages must be 3 MB or smaller");
-

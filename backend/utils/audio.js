@@ -24,7 +24,10 @@ export const sniffAudio = (buf) => {
     return buf.subarray(0, 128).includes("OpusHead") ? "audio/ogg" : null;
   }
   // MP4/M4A (Safari MediaRecorder).
-  if (buf.subarray(4, 8).toString("latin1") === "ftyp" && MP4_BRANDS.has(buf.subarray(8, 12).toString("latin1"))) {
+  if (
+    buf.subarray(4, 8).toString("latin1") === "ftyp" &&
+    MP4_BRANDS.has(buf.subarray(8, 12).toString("latin1"))
+  ) {
     return "audio/mp4";
   }
   return null;
@@ -41,5 +44,7 @@ export const parseWaveform = (raw) => {
   if (!Array.isArray(values)) return [];
   return values
     .slice(0, WAVEFORM_BARS)
-    .map((v) => (typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 100) / 100 : 0));
+    .map((v) =>
+      typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(1, Math.max(0, v)) * 100) / 100 : 0
+    );
 };

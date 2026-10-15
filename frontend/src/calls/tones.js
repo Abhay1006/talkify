@@ -11,7 +11,7 @@ const audioContext = () => {
   }
   // Browsers suspend audio until the page has been interacted with; this is a
   // no-op where that hasn't happened yet, and the ring is simply silent.
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
   return ctx;
 };
 

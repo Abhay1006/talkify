@@ -1,4 +1,4 @@
-import { mediaUrl } from './prepareImage';
+import { mediaUrl } from "./prepareImage";
 
 const MAX_WIDTH = 280;
 const MAX_HEIGHT = 320;
@@ -36,8 +36,11 @@ export const preloadMessageImage = (image, timeoutMs = 3000) =>
     }
     img.src = mediaUrl(image.thumbId);
     const timer = setTimeout(resolve, timeoutMs);
-    img.decode().catch(() => {}).finally(() => {
-      clearTimeout(timer);
-      resolve();
-    });
+    img
+      .decode()
+      .catch(() => {})
+      .finally(() => {
+        clearTimeout(timer);
+        resolve();
+      });
   });

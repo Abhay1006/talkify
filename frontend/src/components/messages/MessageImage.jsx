@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, ButtonBase, Typography } from "@mui/material";
-import { FiImage } from "react-icons/fi";
+import { ImageOutlined } from "@mui/icons-material";
 import { fitImage } from "../../utils/messageImage";
 
 const fill = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" };
@@ -28,7 +28,13 @@ const MessageImage = ({ src, srcSet, placeholder, width, height, alt, onClick, o
       }}
     >
       {placeholder && !loaded && !failed && (
-        <Box component="img" src={placeholder} alt="" aria-hidden sx={{ ...fill, filter: "blur(12px)", transform: "scale(1.15)" }} />
+        <Box
+          component="img"
+          src={placeholder}
+          alt=""
+          aria-hidden
+          sx={{ ...fill, filter: "blur(12px)", transform: "scale(1.15)" }}
+        />
       )}
       {!failed && (
         <Box
@@ -51,8 +57,18 @@ const MessageImage = ({ src, srcSet, placeholder, width, height, alt, onClick, o
         />
       )}
       {failed && (
-        <Box sx={{ ...fill, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0.5, color: "text.secondary" }}>
-          <FiImage size={22} />
+        <Box
+          sx={{
+            ...fill,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 0.5,
+            color: "text.secondary",
+          }}
+        >
+          <ImageOutlined sx={{ fontSize: 24 }} />
           <Typography variant="caption">Image unavailable</Typography>
         </Box>
       )}

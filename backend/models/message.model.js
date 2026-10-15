@@ -6,7 +6,6 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -104,7 +103,9 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+// Serves both directions of the $or in getMessages, with _id doubling as the
+// pagination cursor: it is unique and increases with creation time.
+messageSchema.index({ senderId: 1, receiverId: 1, _id: -1 });
 
 messageSchema.pre("validate", function (next) {
   const hasBody = typeof this.body === "string" && this.body.length > 0;

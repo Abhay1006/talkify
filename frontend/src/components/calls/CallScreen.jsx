@@ -1,9 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { Avatar, Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
-import { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhoneOff, FiRefreshCw, FiAlertTriangle, FiX } from "react-icons/fi";
+import {
+  MicNoneOutlined,
+  MicOffOutlined,
+  VideocamOutlined,
+  VideocamOffOutlined,
+  CallEnd,
+  CameraswitchOutlined,
+  Refresh,
+  WarningAmberOutlined,
+  Close,
+} from "@mui/icons-material";
 import { useCallStore } from "../../calls/callStore";
-import { hangUp, toggleMic, toggleCamera, flipCamera, retryCall, dismissCall, clearNotice } from "../../calls/callEngine";
-import { formatDuration, kindLabel, phaseLabel, endReasonLabel, failureLabel, errorHelp, noticeLabel } from "../../calls/callText";
+import {
+  hangUp,
+  toggleMic,
+  toggleCamera,
+  flipCamera,
+  retryCall,
+  dismissCall,
+  clearNotice,
+} from "../../calls/callEngine";
+import {
+  formatDuration,
+  kindLabel,
+  phaseLabel,
+  endReasonLabel,
+  failureLabel,
+  errorHelp,
+  noticeLabel,
+} from "../../calls/callText";
 import { StreamAudio, StreamVideo } from "./MediaElements";
 
 const LIVE_PHASES = new Set(["connecting", "active", "reconnecting"]);
@@ -23,9 +49,21 @@ const QualityBars = ({ quality }) => {
   const color = { good: "#30a46c", fair: "#f5a524", poor: "#e5484d" }[quality];
   return (
     <Tooltip title={`Connection: ${quality}`}>
-      <Box role="img" aria-label={`Connection quality ${quality}`} sx={{ display: "flex", alignItems: "flex-end", gap: "2px", height: 14 }}>
+      <Box
+        role="img"
+        aria-label={`Connection quality ${quality}`}
+        sx={{ display: "flex", alignItems: "flex-end", gap: "2px", height: 14 }}
+      >
         {[1, 2, 3].map((i) => (
-          <Box key={i} sx={{ width: 4, height: 4 + i * 3, borderRadius: "1px", bgcolor: i <= level ? color : "rgba(255,255,255,0.25)" }} />
+          <Box
+            key={i}
+            sx={{
+              width: 4,
+              height: 4 + i * 3,
+              borderRadius: "1px",
+              bgcolor: i <= level ? color : "rgba(255,255,255,0.25)",
+            }}
+          />
         ))}
       </Box>
     </Tooltip>
@@ -67,8 +105,14 @@ const SelfView = ({ stream, mirrored }) => {
     if (!drag.current) return;
     const el = boxRef.current;
     const parent = el.parentElement.getBoundingClientRect();
-    const x = Math.min(Math.max(8, e.clientX - parent.left - drag.current.dx), parent.width - el.offsetWidth - 8);
-    const y = Math.min(Math.max(8, e.clientY - parent.top - drag.current.dy), parent.height - el.offsetHeight - 8);
+    const x = Math.min(
+      Math.max(8, e.clientX - parent.left - drag.current.dx),
+      parent.width - el.offsetWidth - 8
+    );
+    const y = Math.min(
+      Math.max(8, e.clientY - parent.top - drag.current.dy),
+      parent.height - el.offsetHeight - 8
+    );
     setPos({ x, y });
   };
   const onPointerUp = () => {
@@ -95,15 +139,29 @@ const SelfView = ({ stream, mirrored }) => {
         ...(pos ? { left: pos.x, top: pos.y } : { right: 16, top: { xs: 72, sm: 80 } }),
       }}
     >
-      <StreamVideo stream={stream} mirrored={mirrored} label="Your camera" sx={{ width: "100%", height: "100%" }} />
+      <StreamVideo
+        stream={stream}
+        mirrored={mirrored}
+        label="Your camera"
+        sx={{ width: "100%", height: "100%" }}
+      />
     </Box>
   );
 };
 
 const CallScreen = ({ call }) => {
   const {
-    localStream, remoteStream, remoteVersion, micOn, camOn, facingMode, canFlipCamera,
-    peerCamOn, peerMicOn, peerReconnecting, quality,
+    localStream,
+    remoteStream,
+    remoteVersion,
+    micOn,
+    camOn,
+    facingMode,
+    canFlipCamera,
+    peerCamOn,
+    peerMicOn,
+    peerReconnecting,
+    quality,
   } = useCallStore();
 
   const { phase, peer, kind } = call;
@@ -150,7 +208,13 @@ const CallScreen = ({ call }) => {
           stream={remoteStream}
           version={remoteVersion}
           label={`${peer.fullName}'s camera`}
-          sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: { xs: "cover", sm: "contain" } }}
+          sx={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: { xs: "cover", sm: "contain" },
+          }}
         />
       )}
       {showLocalFull && (
@@ -163,8 +227,21 @@ const CallScreen = ({ call }) => {
       )}
 
       {/* Top bar */}
-      <Box sx={{ position: "relative", zIndex: 3, display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1.5, background: "linear-gradient(rgba(0,0,0,0.55), transparent)" }}>
-        <Typography variant="body2" sx={{ opacity: 0.8 }}>{kindLabel(kind)}</Typography>
+      <Box
+        sx={{
+          position: "relative",
+          zIndex: 3,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          px: 2,
+          py: 1.5,
+          background: "linear-gradient(rgba(0,0,0,0.55), transparent)",
+        }}
+      >
+        <Typography variant="body2" sx={{ opacity: 0.8 }}>
+          {kindLabel(kind)}
+        </Typography>
         {phase === "active" && <QualityBars quality={quality} />}
         <Box sx={{ flex: 1 }} />
         {showRemoteVideo && (
@@ -175,9 +252,23 @@ const CallScreen = ({ call }) => {
       </Box>
 
       {/* Banners */}
-      <Box sx={{ position: "relative", zIndex: 3, display: "flex", flexDirection: "column", alignItems: "center", gap: 1, px: 2 }}>
+      <Box
+        sx={{
+          position: "relative",
+          zIndex: 3,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 1,
+          px: 2,
+        }}
+      >
         {(peerReconnecting || phase === "reconnecting") && (
-          <Banner>{peerReconnecting ? `${peer.fullName}'s connection is unstable…` : "Your connection is unstable. Reconnecting…"}</Banner>
+          <Banner>
+            {peerReconnecting
+              ? `${peer.fullName}'s connection is unstable…`
+              : "Your connection is unstable. Reconnecting…"}
+          </Banner>
         )}
         {live && !peerMicOn && <Banner>{peer.fullName} is muted</Banner>}
         {notice && <Banner>{notice}</Banner>}
@@ -185,18 +276,42 @@ const CallScreen = ({ call }) => {
 
       {/* Centre: who you're talking to, when there's no video to show */}
       {!showRemoteVideo && (
-        <Box sx={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1.5, px: 3, textAlign: "center" }}>
+        <Box
+          sx={{
+            position: "relative",
+            zIndex: 1,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1.5,
+            px: 3,
+            textAlign: "center",
+          }}
+        >
           {phase === "error" ? (
             <ErrorPanel code={call.error} />
           ) : (
             <>
-              <Avatar src={peer?.profilePic} sx={{ width: { xs: 112, sm: 136 }, height: { xs: 112, sm: 136 }, boxShadow: "0 0 0 6px rgba(255,255,255,0.06)" }} />
-              <Typography variant="h5" fontWeight={600}>{peer?.fullName}</Typography>
+              <Avatar
+                src={peer?.profilePic}
+                sx={{
+                  width: { xs: 112, sm: 136 },
+                  height: { xs: 112, sm: 136 },
+                  boxShadow: "0 0 0 6px rgba(255,255,255,0.06)",
+                }}
+              />
+              <Typography variant="h5" fontWeight={600}>
+                {peer?.fullName}
+              </Typography>
               <Typography variant="body1" aria-live="polite" sx={{ opacity: 0.8, minHeight: 24 }}>
                 {phase === "failed" ? failureLabel(call.failure) : status}
               </Typography>
               {live && kind === "video" && !peerCamOn && phase === "active" && (
-                <Typography variant="caption" sx={{ opacity: 0.6 }}>{peer?.fullName}&apos;s camera is off</Typography>
+                <Typography variant="caption" sx={{ opacity: 0.6 }}>
+                  {peer?.fullName}&apos;s camera is off
+                </Typography>
               )}
             </>
           )}
@@ -207,13 +322,29 @@ const CallScreen = ({ call }) => {
       {showSelfView && <SelfView stream={localStream} mirrored={facingMode === "user"} />}
 
       {/* Controls */}
-      <Box sx={{ position: "relative", zIndex: 3, display: "flex", justifyContent: "center", gap: { xs: 2, sm: 3 }, py: 3, background: "linear-gradient(transparent, rgba(0,0,0,0.6))" }}>
+      <Box
+        sx={{
+          position: "relative",
+          zIndex: 3,
+          display: "flex",
+          justifyContent: "center",
+          gap: { xs: 2, sm: 3 },
+          py: 3,
+          background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
+        }}
+      >
         {phase === "failed" || phase === "error" ? (
           <>
-            <Button variant="outlined" color="inherit" startIcon={<FiX />} onClick={dismissCall} sx={{ borderColor: "rgba(255,255,255,0.3)", color: "white", background: "none" }}>
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<Close />}
+              onClick={dismissCall}
+              sx={{ borderColor: "rgba(255,255,255,0.3)", color: "white", background: "none" }}
+            >
               Close
             </Button>
-            <Button variant="contained" startIcon={<FiRefreshCw />} onClick={retryCall}>
+            <Button variant="contained" startIcon={<Refresh />} onClick={retryCall}>
               Try again
             </Button>
           </>
@@ -222,18 +353,26 @@ const CallScreen = ({ call }) => {
         ) : (
           <>
             <ControlButton label={micOn ? "Mute" : "Unmute"} active={micOn} onClick={toggleMic}>
-              {micOn ? <FiMic size={22} /> : <FiMicOff size={22} />}
+              {micOn ? <MicNoneOutlined sx={{ fontSize: 24 }} /> : <MicOffOutlined sx={{ fontSize: 24 }} />}
             </ControlButton>
-            <ControlButton label={camOn ? "Turn camera off" : "Turn camera on"} active={camOn} onClick={toggleCamera}>
-              {camOn ? <FiVideo size={22} /> : <FiVideoOff size={22} />}
+            <ControlButton
+              label={camOn ? "Turn camera off" : "Turn camera on"}
+              active={camOn}
+              onClick={toggleCamera}
+            >
+              {camOn ? (
+                <VideocamOutlined sx={{ fontSize: 24 }} />
+              ) : (
+                <VideocamOffOutlined sx={{ fontSize: 24 }} />
+              )}
             </ControlButton>
             {camOn && canFlipCamera && (
               <ControlButton label="Switch camera" onClick={flipCamera}>
-                <FiRefreshCw size={20} />
+                <CameraswitchOutlined sx={{ fontSize: 22 }} />
               </ControlButton>
             )}
             <ControlButton label={outgoing ? "Cancel call" : "End call"} danger onClick={hangUp}>
-              <FiPhoneOff size={24} />
+              <CallEnd sx={{ fontSize: 26 }} />
             </ControlButton>
           </>
         )}
@@ -243,7 +382,17 @@ const CallScreen = ({ call }) => {
 };
 
 const Banner = ({ children }) => (
-  <Box role="status" sx={{ px: 2, py: 0.75, borderRadius: "999px", bgcolor: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", fontSize: "0.8rem" }}>
+  <Box
+    role="status"
+    sx={{
+      px: 2,
+      py: 0.75,
+      borderRadius: "999px",
+      bgcolor: "rgba(0,0,0,0.6)",
+      backdropFilter: "blur(6px)",
+      fontSize: "0.8rem",
+    }}
+  >
     {children}
   </Box>
 );
@@ -252,11 +401,26 @@ const ErrorPanel = ({ code }) => {
   const { title, body } = errorHelp(code);
   return (
     <Box sx={{ maxWidth: 380, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
-      <Box sx={{ width: 64, height: 64, borderRadius: "50%", bgcolor: "rgba(229,72,77,0.15)", color: "#ff6b70", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <FiAlertTriangle size={28} />
+      <Box
+        sx={{
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          bgcolor: "rgba(229,72,77,0.15)",
+          color: "#ff6b70",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <WarningAmberOutlined sx={{ fontSize: 30 }} />
       </Box>
-      <Typography variant="h6" fontWeight={600}>{title}</Typography>
-      <Typography variant="body2" sx={{ opacity: 0.8, lineHeight: 1.6 }}>{body}</Typography>
+      <Typography variant="h6" fontWeight={600}>
+        {title}
+      </Typography>
+      <Typography variant="body2" sx={{ opacity: 0.8, lineHeight: 1.6 }}>
+        {body}
+      </Typography>
     </Box>
   );
 };

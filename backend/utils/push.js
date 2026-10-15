@@ -81,7 +81,10 @@ export const notifyUser = async (userId, payload, { fromUserId } = {}) => {
     await Promise.all(
       subscriptions.map((sub) =>
         webpush
-          .sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, body, { TTL: 60 * 60, urgency: payload.urgency ?? "normal" })
+          .sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, body, {
+            TTL: 60 * 60,
+            urgency: payload.urgency ?? "normal",
+          })
           .catch((error) => {
             // 404/410: the browser dropped this subscription. Forget it.
             if (error.statusCode === 404 || error.statusCode === 410) {

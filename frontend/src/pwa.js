@@ -1,5 +1,5 @@
-import { registerSW } from 'virtual:pwa-register';
-import { create } from 'zustand';
+import { registerSW } from "virtual:pwa-register";
+import { create } from "zustand";
 
 // Service worker registration, install prompt and update prompt, exposed as a
 // tiny store so the UI can offer "Install app" / "Update available".
@@ -12,17 +12,17 @@ export const usePwaStore = create(() => ({
 let updateSW = null;
 
 export const initPwa = () => {
-  if (!('serviceWorker' in navigator)) return;
+  if (!("serviceWorker" in navigator)) return;
 
   updateSW = registerSW({
     onNeedRefresh: () => usePwaStore.setState({ updateReady: true }),
   });
 
-  window.addEventListener('beforeinstallprompt', (event) => {
+  window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     usePwaStore.setState({ installEvent: event });
   });
-  window.addEventListener('appinstalled', () => usePwaStore.setState({ installEvent: null }));
+  window.addEventListener("appinstalled", () => usePwaStore.setState({ installEvent: null }));
 };
 
 export const promptInstall = async () => {

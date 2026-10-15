@@ -12,7 +12,9 @@
 }
 
 /* Use dvh (dynamic viewport height) for mobile browsers that hide/show address bar */
-html, body, #root {
+html,
+body,
+#root {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -45,7 +47,9 @@ body::before {
 }
 
 /* Prevent iOS zoom on input focus — must be >= 16px */
-input, textarea, select {
+input,
+textarea,
+select {
   font-size: 16px !important;
 }
 
@@ -95,29 +99,53 @@ input, textarea, select {
 }
 
 @keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
 }
 
 /* Skeleton loading animation */
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
   border-radius: 8px;
 }
 
 @keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Mobile-specific adjustments */
 @media (max-width: 600px) {
   /* Ensure touch targets are at least 44px */
-  button, [role="button"], a {
+  button,
+  [role="button"],
+  a {
     min-height: 44px;
     min-width: 44px;
   }

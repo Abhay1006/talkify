@@ -1,10 +1,17 @@
 // Test helpers: boot a real server process against a throwaway database and
 // talk to it over HTTP and Socket.IO, exactly as the browser does.
+//
+// Like api.test.js, these need MONGO_TEST_URI (CI provides one); suites skip
+// themselves without it.
 import { spawn } from "child_process";
+import mongoose from "mongoose";
 import crypto from "crypto";
 import { io as connectSocket } from "socket.io-client";
 
-const MONGO_BASE = process.env.TEST_MONGO_URI ?? "mongodb://127.0.0.1:27017";
+const MONGO_BASE = process.env.MONGO_TEST_URI;
+
+/** Pass as a suite's `skip` option. */
+export const skipWithoutMongo = MONGO_BASE ? false : "MONGO_TEST_URI is not set";
 
 export const startServer = (env = {}) =>
   new Promise((resolve, reject) => {
@@ -25,12 +32,22 @@ export const startServer = (env = {}) =>
     const timer = setTimeout(() => reject(new Error(`server did not start:\n${output}`)), 15000);
     const onData = (chunk) => {
       output += chunk;
-      if (output.includes("connected to mongodb")) {
+      // The server connects to MongoDB first and only then listens.
+      if (/server running on port/.test(output)) {
         clearTimeout(timer);
         resolve({
           url: `http://127.0.0.1:${port}`,
           logs: () => output,
-          stop: () => new Promise((r) => { child.once("exit", r); child.kill(); }),
+          // Stops the server and drops its throwaway database.
+          stop: async () => {
+            await new Promise((r) => {
+              child.once("exit", r);
+              child.kill();
+            });
+            const conn = await mongoose.createConnection(`${MONGO_BASE}/${dbName}`).asPromise();
+            await conn.dropDatabase();
+            await conn.close();
+          },
         });
       }
     };
@@ -42,11 +59,21 @@ export const startServer = (env = {}) =>
 let counter = 0;
 
 export const signup = async (url, name = "user") => {
-  const username = `${name}${Date.now()}${counter++}`;
+  // Usernames: 3-20 of [a-z0-9_.]. Unique per run without growing too long.
+  const username = `${name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 8)}_${(Date.now() % 1e6).toString(36)}${(counter++).toString(36)}`;
   const res = await fetch(`${url}/api/auth/signup`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ fullName: name, username, password: "secret123", confirmPassword: "secret123", gender: "female" }),
+    body: JSON.stringify({
+      fullName: name,
+      username,
+      password: "secret123",
+      confirmPassword: "secret123",
+      gender: "female",
+    }),
   });
   if (!res.ok) throw new Error(`signup failed: ${res.status} ${await res.text()}`);
   const body = await res.json();

@@ -10,9 +10,10 @@ module.exports = {
   ignorePatterns: ["dist", ".eslintrc.cjs"],
   parserOptions: { ecmaVersion: 2022, sourceType: "module" },
   settings: { react: { version: "detect" } },
-  plugins: ["react", "react-hooks"],
+  plugins: ["react", "react-hooks", "react-refresh"],
   rules: {
     "react/jsx-no-target-blank": "off",
     "react/prop-types": "off",
+    "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
   },
 };

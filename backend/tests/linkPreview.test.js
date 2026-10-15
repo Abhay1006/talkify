@@ -22,9 +22,27 @@ after(() => site.close());
 
 test("private, loopback, link-local and reserved addresses are not public", () => {
   for (const ip of [
-    "127.0.0.1", "10.1.2.3", "172.16.0.1", "172.31.255.255", "192.168.1.1", "169.254.169.254",
-    "100.64.0.1", "0.0.0.0", "224.0.0.1", "255.255.255.255", "198.18.0.1",
-    "::1", "::", "fe80::1", "fc00::1", "fd12:3456::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe", "64:ff9b::a00:1",
+    "127.0.0.1",
+    "10.1.2.3",
+    "172.16.0.1",
+    "172.31.255.255",
+    "192.168.1.1",
+    "169.254.169.254",
+    "100.64.0.1",
+    "0.0.0.0",
+    "224.0.0.1",
+    "255.255.255.255",
+    "198.18.0.1",
+    "::1",
+    "::",
+    "fe80::1",
+    "fc00::1",
+    "fd12:3456::1",
+    "::ffff:127.0.0.1",
+    "::ffff:10.0.0.1",
+    "::ffff:7f00:1",
+    "::ffff:a9fe:a9fe",
+    "64:ff9b::a00:1",
   ]) {
     assert.equal(isPublicAddress(ip), false, ip);
   }
@@ -60,7 +78,9 @@ test("internal targets are refused before any request is made", async () => {
 
 test("parses OpenGraph, Twitter and plain HTML", () => {
   assert.deepEqual(
-    parsePreview(`<meta name="twitter:title" content='Single &quot;quoted&quot;'><meta name="description" content="Plain desc">`),
+    parsePreview(
+      `<meta name="twitter:title" content='Single &quot;quoted&quot;'><meta name="description" content="Plain desc">`
+    ),
     { title: 'Single "quoted"', description: "Plain desc", siteName: undefined }
   );
   assert.equal(parsePreview("<html><body>no title</body></html>"), null);

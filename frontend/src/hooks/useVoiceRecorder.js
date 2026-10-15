@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Records a voice message with MediaRecorder and samples the input level for
 // a waveform. Opus in WebM/Ogg where supported (Chrome, Firefox, Edge), AAC
@@ -8,11 +8,11 @@ export const MAX_RECORDING_MS = 5 * 60 * 1000;
 const SAMPLE_INTERVAL_MS = 80;
 const WAVEFORM_BARS = 48;
 
-const MIME_PREFERENCES = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm'];
+const MIME_PREFERENCES = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"];
 
 const pickMimeType = () =>
-  typeof MediaRecorder !== 'undefined'
-    ? MIME_PREFERENCES.find((t) => MediaRecorder.isTypeSupported?.(t)) ?? ''
+  typeof MediaRecorder !== "undefined"
+    ? (MIME_PREFERENCES.find((t) => MediaRecorder.isTypeSupported?.(t)) ?? "")
     : null;
 
 // Averages raw level samples down to WAVEFORM_BARS bars, scaled so the
@@ -52,14 +52,18 @@ const useVoiceRecorder = ({ onMaxDuration } = {}) => {
   const start = useCallback(async () => {
     const mimeType = pickMimeType();
     if (mimeType === null || !navigator.mediaDevices?.getUserMedia) {
-      throw new RecorderError('Voice messages aren’t supported in this browser');
+      throw new RecorderError("Voice messages aren’t supported in this browser");
     }
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
     } catch (error) {
       throw new RecorderError(
-        error.name === 'NotAllowedError' ? 'Microphone access is blocked for this site' : 'Couldn’t access your microphone'
+        error.name === "NotAllowedError"
+          ? "Microphone access is blocked for this site"
+          : "Couldn’t access your microphone"
       );
     }
 
@@ -101,7 +105,7 @@ const useVoiceRecorder = ({ onMaxDuration } = {}) => {
         if (!recorder) return resolve(null);
         recorder.onstop = () => {
           const durationMs = Math.min(MAX_RECORDING_MS, Date.now() - startedAt);
-          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
           const waveform = toWaveform(samples);
           cleanup();
           resolve({ blob, durationMs, waveform });
@@ -113,7 +117,7 @@ const useVoiceRecorder = ({ onMaxDuration } = {}) => {
 
   const cancel = useCallback(() => {
     const { recorder } = r.current;
-    if (recorder && recorder.state !== 'inactive') {
+    if (recorder && recorder.state !== "inactive") {
       recorder.onstop = null;
       recorder.stop();
     }

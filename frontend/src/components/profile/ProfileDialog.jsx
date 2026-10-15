@@ -2,9 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { useSnackbar } from "notistack";
 import {
-  Avatar, Box, Button, CircularProgress, Dialog, Divider, IconButton, Switch, TextField, Typography,
+  Avatar,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  Divider,
+  IconButton,
+  Switch,
+  TextField,
+  Typography,
 } from "@mui/material";
-import { FiCamera, FiCopy, FiDownload, FiX } from "react-icons/fi";
+import { PhotoCameraOutlined, ContentCopyOutlined, FileDownloadOutlined, Close } from "@mui/icons-material";
 import { useAuthContext } from "../../context/AuthContext";
 import { apiClient } from "../../api/client";
 import usePushNotifications from "../../hooks/usePushNotifications";
@@ -16,11 +25,13 @@ const MAX_BIO = 160;
 
 // Opening this link (or scanning its QR code) takes someone straight to a
 // chat with you. See useDeepLinks.
-export const profileLink = (username) => `${window.location.origin}/?add=${encodeURIComponent(username)}`;
+const profileLink = (username) => `${window.location.origin}/?add=${encodeURIComponent(username)}`;
 
 const Section = ({ title, children }) => (
   <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-    <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600, lineHeight: 1.5 }}>{title}</Typography>
+    <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600, lineHeight: 1.5 }}>
+      {title}
+    </Typography>
     {children}
   </Box>
 );
@@ -43,10 +54,13 @@ const ProfileDialog = ({ open, onClose }) => {
     if (!open) return;
     setFullName(authUser.fullName);
     // Bio isn't in the login response; fetch the full profile once.
-    apiClient.get("/api/users/me").then((me) => {
-      setBio(me.bio ?? "");
-      updateAuthUser({ bio: me.bio ?? "", profilePic: me.profilePic, fullName: me.fullName });
-    }).catch(() => {});
+    apiClient
+      .get("/api/users/me")
+      .then((me) => {
+        setBio(me.bio ?? "");
+        updateAuthUser({ bio: me.bio ?? "", profilePic: me.profilePic, fullName: me.fullName });
+      })
+      .catch(() => {});
     QRCode.toDataURL(link, { margin: 1, width: 240, color: { dark: "#0B0E1A", light: "#FFFFFF" } })
       .then(setQr)
       .catch(() => setQr(null));
@@ -79,7 +93,9 @@ const ProfileDialog = ({ open, onClose }) => {
       updateAuthUser({ profilePic: me.profilePic });
       enqueueSnackbar("Profile picture updated", { variant: "success" });
     } catch (error) {
-      enqueueSnackbar(error instanceof ImagePrepError ? error.message : error.message || "Upload failed", { variant: "error" });
+      enqueueSnackbar(error instanceof ImagePrepError ? error.message : error.message || "Upload failed", {
+        variant: "error",
+      });
     } finally {
       setUploading(false);
     }
@@ -111,13 +127,24 @@ const ProfileDialog = ({ open, onClose }) => {
       slotProps={{
         paper: {
           "aria-label": "Your profile",
-          sx: { bgcolor: "#12152a", backdropFilter: "none", backgroundImage: "none", borderRadius: "20px", m: { xs: 1.5, sm: 4 }, width: { xs: "calc(100% - 24px)", sm: "100%" } },
+          sx: {
+            bgcolor: "#12152a",
+            backdropFilter: "none",
+            backgroundImage: "none",
+            borderRadius: "20px",
+            m: { xs: 1.5, sm: 4 },
+            width: { xs: "calc(100% - 24px)", sm: "100%" },
+          },
         },
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", px: 3, pt: 2.5, pb: 1 }}>
-        <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>Your profile</Typography>
-        <IconButton onClick={onClose} aria-label="Close" sx={{ width: 40, height: 40 }}><FiX /></IconButton>
+        <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
+          Your profile
+        </Typography>
+        <IconButton onClick={onClose} aria-label="Close" sx={{ width: 40, height: 40 }}>
+          <Close />
+        </IconButton>
       </Box>
 
       <Box sx={{ px: 3, pb: 3, display: "flex", flexDirection: "column", gap: 3 }}>
@@ -128,13 +155,37 @@ const ProfileDialog = ({ open, onClose }) => {
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
               aria-label="Change profile picture"
-              sx={{ position: "absolute", right: -4, bottom: -4, bgcolor: "primary.main", color: "white", width: 36, height: 36, "&:hover": { bgcolor: "primary.dark" } }}
+              sx={{
+                position: "absolute",
+                right: -4,
+                bottom: -4,
+                bgcolor: "primary.main",
+                color: "white",
+                width: 36,
+                height: 36,
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
             >
-              {uploading ? <CircularProgress size={16} color="inherit" /> : <FiCamera size={16} />}
+              {uploading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <PhotoCameraOutlined sx={{ fontSize: 18 }} />
+              )}
             </IconButton>
-            <input ref={fileRef} type="file" hidden accept={ACCEPTED_IMAGE_TYPES.join(",")} onChange={(e) => { changeAvatar(e.target.files?.[0]); e.target.value = ""; }} />
+            <input
+              ref={fileRef}
+              type="file"
+              hidden
+              accept={ACCEPTED_IMAGE_TYPES.join(",")}
+              onChange={(e) => {
+                changeAvatar(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
           </Box>
-          <Typography variant="body2" color="text.secondary">@{authUser.username}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            @{authUser.username}
+          </Typography>
         </Box>
 
         <Section title="About you">
@@ -155,7 +206,12 @@ const ProfileDialog = ({ open, onClose }) => {
             minRows={2}
             helperText={`${bio.length}/${MAX_BIO}`}
           />
-          <Button variant="contained" onClick={save} disabled={!dirty || saving || !fullName.trim()} sx={{ alignSelf: "flex-end", py: 0.75 }}>
+          <Button
+            variant="contained"
+            onClick={save}
+            disabled={!dirty || saving || !fullName.trim()}
+            sx={{ alignSelf: "flex-end", py: 0.75 }}
+          >
             {saving ? <CircularProgress size={18} color="inherit" /> : "Save"}
           </Button>
         </Section>
@@ -164,17 +220,54 @@ const ProfileDialog = ({ open, onClose }) => {
 
         <Section title="Share your profile">
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <Box sx={{ width: 120, height: 120, flexShrink: 0, borderRadius: "12px", overflow: "hidden", bgcolor: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {qr ? <Box component="img" src={qr} alt={`QR code linking to @${authUser.username}`} sx={{ width: "100%", height: "100%" }} /> : <CircularProgress size={20} />}
+            <Box
+              sx={{
+                width: 120,
+                height: 120,
+                flexShrink: 0,
+                borderRadius: "12px",
+                overflow: "hidden",
+                bgcolor: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {qr ? (
+                <Box
+                  component="img"
+                  src={qr}
+                  alt={`QR code linking to @${authUser.username}`}
+                  sx={{ width: "100%", height: "100%" }}
+                />
+              ) : (
+                <CircularProgress size={20} />
+              )}
             </Box>
             <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 Anyone who scans this or opens the link can start a chat with you.
               </Typography>
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                <Button size="small" variant="outlined" startIcon={<FiCopy />} onClick={copyLink} sx={{ py: 0.5, px: 1.5, background: "none" }}>Copy link</Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<ContentCopyOutlined />}
+                  onClick={copyLink}
+                  sx={{ py: 0.5, px: 1.5, background: "none" }}
+                >
+                  Copy link
+                </Button>
                 {qr && (
-                  <Button size="small" variant="outlined" startIcon={<FiDownload />} component="a" href={qr} download={`talkify-${authUser.username}.png`} sx={{ py: 0.5, px: 1.5, background: "none" }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<FileDownloadOutlined />}
+                    component="a"
+                    href={qr}
+                    download={`talkify-${authUser.username}.png`}
+                    sx={{ py: 0.5, px: 1.5, background: "none" }}
+                  >
                     Save QR
                   </Button>
                 )}
@@ -188,7 +281,9 @@ const ProfileDialog = ({ open, onClose }) => {
         <Section title="This device">
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" fontWeight={500}>Notifications</Typography>
+              <Typography variant="body2" fontWeight={500}>
+                Notifications
+              </Typography>
               <Typography variant="caption" color="text.secondary">
                 {push.reason ?? "Messages and missed calls when Talkify is closed."}
               </Typography>

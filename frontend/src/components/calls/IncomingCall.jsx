@@ -1,5 +1,5 @@
 import { Avatar, Box, Dialog, IconButton, Typography } from "@mui/material";
-import { FiPhone, FiPhoneOff, FiVideo } from "react-icons/fi";
+import { CallOutlined, CallEnd, VideocamOutlined } from "@mui/icons-material";
 import { acceptCall, declineCall } from "../../calls/callEngine";
 
 const RoundButton = ({ label, color, onClick, children }) => (
@@ -7,11 +7,19 @@ const RoundButton = ({ label, color, onClick, children }) => (
     <IconButton
       onClick={onClick}
       aria-label={label}
-      sx={{ width: 60, height: 60, bgcolor: color, color: "white", "&:hover": { bgcolor: color, filter: "brightness(1.1)" } }}
+      sx={{
+        width: 60,
+        height: 60,
+        bgcolor: color,
+        color: "white",
+        "&:hover": { bgcolor: color, filter: "brightness(1.1)" },
+      }}
     >
       {children}
     </IconButton>
-    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.75)" }}>{label}</Typography>
+    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.75)" }}>
+      {label}
+    </Typography>
   </Box>
 );
 
@@ -25,15 +33,28 @@ const IncomingCall = ({ call }) => {
         paper: {
           role: "alertdialog",
           "aria-label": `Incoming ${kind === "video" ? "video" : "voice"} call from ${peer.fullName}`,
-          sx: { bgcolor: "#12152a", backdropFilter: "none", backgroundImage: "none", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", p: { xs: 3, sm: 4 }, width: 340, maxWidth: "calc(100% - 32px)" },
+          sx: {
+            bgcolor: "#12152a",
+            backdropFilter: "none",
+            backgroundImage: "none",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "24px",
+            p: { xs: 3, sm: 4 },
+            width: 340,
+            maxWidth: "calc(100% - 32px)",
+          },
         },
       }}
     >
-      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 1 }}>
+      <Box
+        sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 1 }}
+      >
         <Avatar
           src={peer.profilePic}
           sx={{
-            width: 88, height: 88, mb: 1,
+            width: 88,
+            height: 88,
+            mb: 1,
             boxShadow: "0 0 0 0 rgba(108,99,255,0.6)",
             animation: "callPulse 1.6s infinite",
             "@keyframes callPulse": {
@@ -44,26 +65,28 @@ const IncomingCall = ({ call }) => {
             "@media (prefers-reduced-motion: reduce)": { animation: "none" },
           }}
         />
-        <Typography variant="h6" fontWeight={600} sx={{ color: "white" }}>{peer.fullName}</Typography>
+        <Typography variant="h6" fontWeight={600} sx={{ color: "white" }}>
+          {peer.fullName}
+        </Typography>
         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)", mb: 2 }}>
           Incoming {kind === "video" ? "video" : "voice"} call
         </Typography>
         <Box sx={{ display: "flex", gap: 3, justifyContent: "center" }}>
           <RoundButton label="Decline" color="#e5484d" onClick={declineCall}>
-            <FiPhoneOff size={24} />
+            <CallEnd sx={{ fontSize: 26 }} />
           </RoundButton>
           {kind === "video" ? (
             <>
               <RoundButton label="Audio only" color="#3b3f5c" onClick={() => acceptCall({ video: false })}>
-                <FiPhone size={22} />
+                <CallOutlined sx={{ fontSize: 24 }} />
               </RoundButton>
               <RoundButton label="Accept" color="#30a46c" onClick={() => acceptCall({ video: true })}>
-                <FiVideo size={24} />
+                <VideocamOutlined sx={{ fontSize: 26 }} />
               </RoundButton>
             </>
           ) : (
             <RoundButton label="Accept" color="#30a46c" onClick={() => acceptCall({ video: false })}>
-              <FiPhone size={24} />
+              <CallOutlined sx={{ fontSize: 26 }} />
             </RoundButton>
           )}
         </Box>

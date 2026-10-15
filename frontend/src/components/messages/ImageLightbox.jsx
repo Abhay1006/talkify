@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, Dialog, IconButton, Typography } from "@mui/material";
-import { FiChevronLeft, FiChevronRight, FiDownload, FiX } from "react-icons/fi";
+import { ChevronLeft, ChevronRight, FileDownloadOutlined, Close } from "@mui/icons-material";
 import { useAuthContext } from "../../context/AuthContext";
-import useConversation from "../../zustand/useConversations";
-import { extractTime } from "../../utils/extractTime";
+import { formatMessageTime } from "../../utils/formatMessageTime";
 import { mediaUrl } from "../../utils/prepareImage";
 
 const SWIPE_THRESHOLD = 50;
@@ -21,9 +20,8 @@ const navButtonSx = {
 
 // Full-screen viewer for every image in the open conversation, with arrow
 // keys and swipe to move between them.
-const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
+const ImageLightbox = ({ images, index, peer, onClose, onNavigate }) => {
   const { authUser } = useAuthContext();
-  const { selectedConversation } = useConversation();
   const [loaded, setLoaded] = useState(false);
   const touchStartX = useRef(null);
 
@@ -48,7 +46,7 @@ const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
 
   const { image } = message;
   const fromMe = message.senderId === authUser._id;
-  const sender = fromMe ? "You" : selectedConversation?.fullName;
+  const sender = fromMe ? "You" : peer?.fullName;
 
   const onTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -68,17 +66,38 @@ const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
       open
       fullScreen
       onClose={onClose}
-      slotProps={{ paper: {
-        "aria-label": "Image viewer",
-        sx: { bgcolor: "#05060a", backdropFilter: "none", WebkitBackdropFilter: "none", border: "none", boxShadow: "none", borderRadius: 0 },
-      } }}
+      slotProps={{
+        paper: {
+          "aria-label": "Image viewer",
+          sx: {
+            bgcolor: "#05060a",
+            backdropFilter: "none",
+            WebkitBackdropFilter: "none",
+            border: "none",
+            boxShadow: "none",
+            borderRadius: 0,
+          },
+        },
+      }}
     >
-      <Box sx={{ display: "flex", flexDirection: "column", height: "100%", pt: "env(safe-area-inset-top)", pb: "env(safe-area-inset-bottom)" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: { xs: 1, sm: 2 }, py: 1, color: "white" }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          pt: "env(safe-area-inset-top)",
+          pb: "env(safe-area-inset-bottom)",
+        }}
+      >
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1, px: { xs: 1, sm: 2 }, py: 1, color: "white" }}
+        >
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" noWrap>{sender}</Typography>
+            <Typography variant="subtitle2" noWrap>
+              {sender}
+            </Typography>
             <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              {extractTime(message.createdAt)}
+              {formatMessageTime(message.createdAt)}
               {images.length > 1 && ` · ${index + 1} of ${images.length}`}
             </Typography>
           </Box>
@@ -89,14 +108,22 @@ const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
             aria-label="Download image"
             sx={{ color: "white", width: 44, height: 44 }}
           >
-            <FiDownload size={20} />
+            <FileDownloadOutlined sx={{ fontSize: 22 }} />
           </IconButton>
-          <IconButton onClick={onClose} aria-label="Close image viewer" sx={{ color: "white", width: 44, height: 44 }}>
-            <FiX size={22} />
+          <IconButton
+            onClick={onClose}
+            aria-label="Close image viewer"
+            sx={{ color: "white", width: 44, height: 44 }}
+          >
+            <Close sx={{ fontSize: 24 }} />
           </IconButton>
         </Box>
 
-        <Box onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} sx={{ position: "relative", flex: 1, minHeight: 0, mx: { xs: 0, sm: 8 } }}>
+        <Box
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          sx={{ position: "relative", flex: 1, minHeight: 0, mx: { xs: 0, sm: 8 } }}
+        >
           {/* The thumbnail is almost always cached already: show it at once,
               then swap in the full-size image when it arrives. */}
           {!loaded && <Box component="img" src={mediaUrl(image.thumbId)} alt="" aria-hidden sx={imgSx} />}
@@ -111,18 +138,36 @@ const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
         </Box>
 
         {hasPrev && (
-          <IconButton onClick={() => onNavigate(index - 1)} aria-label="Previous image" sx={{ ...navButtonSx, left: { xs: 8, sm: 16 } }}>
-            <FiChevronLeft size={24} />
+          <IconButton
+            onClick={() => onNavigate(index - 1)}
+            aria-label="Previous image"
+            sx={{ ...navButtonSx, left: { xs: 8, sm: 16 } }}
+          >
+            <ChevronLeft sx={{ fontSize: 28 }} />
           </IconButton>
         )}
         {hasNext && (
-          <IconButton onClick={() => onNavigate(index + 1)} aria-label="Next image" sx={{ ...navButtonSx, right: { xs: 8, sm: 16 } }}>
-            <FiChevronRight size={24} />
+          <IconButton
+            onClick={() => onNavigate(index + 1)}
+            aria-label="Next image"
+            sx={{ ...navButtonSx, right: { xs: 8, sm: 16 } }}
+          >
+            <ChevronRight sx={{ fontSize: 28 }} />
           </IconButton>
         )}
 
         {message.body && (
-          <Typography sx={{ color: "white", textAlign: "center", px: 3, py: 2, wordBreak: "break-word", maxHeight: "25vh", overflow: "auto" }}>
+          <Typography
+            sx={{
+              color: "white",
+              textAlign: "center",
+              px: 3,
+              py: 2,
+              wordBreak: "break-word",
+              maxHeight: "25vh",
+              overflow: "auto",
+            }}
+          >
             {message.body}
           </Typography>
         )}
