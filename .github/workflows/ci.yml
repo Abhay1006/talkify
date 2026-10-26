@@ -2,8 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, v2-development]
   pull_request:
+
+# A newer push to the same branch cancels the older run, so an older run can
+# never finish last and move the deploy pointer back to an older commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -44,3 +50,20 @@ jobs:
 
       - name: Build frontend
         run: npm run build --prefix frontend
+
+  # Continuous delivery for the self-hosted tablet. Once a push to
+  # v2-development passes every check, point the `v2-deploy` branch at that
+  # commit. The tablet runs scripts/tab-deploy.sh, which watches `v2-deploy`,
+  # so it only ever pulls commits that passed CI. See docs/TAB-DEPLOY.md.
+  promote:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v2-development'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Move v2-deploy to this commit
+        run: git push --force origin "${GITHUB_SHA}:refs/heads/v2-deploy"

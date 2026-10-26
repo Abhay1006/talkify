@@ -89,7 +89,8 @@ deliberately plain: no decoration, just the conversation. It runs on
 | `npm test` | Backend tests. Integration tests run only when `MONGO_TEST_URI` is set |
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, the full test suite
-against a MongoDB service container, and the frontend build on every PR.
+against a MongoDB service container, and the frontend build on every PR and on
+every push to `master` and `v2-development`.
 
 ## Environment Variables
 
@@ -119,6 +120,14 @@ The app is deployed on Render as a single web service:
 Calls and installing the app need HTTPS, which Render provides. Images and voice
 messages are stored in MongoDB (GridFS), behind a small storage adapter
 (`backend/storage/mediaStorage.js`) so they can move to Cloudinary or S3 later.
+
+### Self-hosted tablet (`v2-development`)
+
+`v2-development` is also self-hosted on a tablet and deploys itself: push to
+`v2-development`, CI checks it and moves the `v2-deploy` branch to that commit,
+and `scripts/tab-deploy.sh watch` on the tablet pulls, builds and restarts the
+app (rolling back if it fails to start). Setup and commands:
+[docs/TAB-DEPLOY.md](docs/TAB-DEPLOY.md).
 
 ## Database Maintenance Scripts
 
