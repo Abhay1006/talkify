@@ -24,6 +24,16 @@
 #   APP_NAME        pm2 process name             (default talkify)
 #   HEALTH_TIMEOUT  seconds to wait for the app  (default 90)
 #   PORT            port to health-check         (default: PORT in .env, else 5001)
+#   RESTART_CMD     shell command that (re)starts the server. Set it when
+#                   something else already supervises the app (a tmux
+#                   watchdog, systemd, ...): the script then only runs this to
+#                   restart, never starts its own copy, and leaves crash
+#                   recovery to that supervisor.
+#   POST_INSTALL    shell command run after every `npm ci` of the server, for
+#                   host-only packages that `npm ci` removes again.
+#
+# Settings can also go in .deploy/env (sourced, gitignored), which keeps them
+# with the checkout instead of in whatever starts `watch`.
 #
 # The server runs under pm2 when it is installed (npm install -g pm2), which
 # also restarts it if it crashes. Without pm2 it runs in the background with a
@@ -51,6 +61,11 @@ APP_LOG="$LOG_DIR/$APP_NAME.log"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR"
 
+# shellcheck source=/dev/null
+[ -f "$STATE_DIR/env" ] && . "$STATE_DIR/env"
+RESTART_CMD="${RESTART_CMD:-}"
+POST_INSTALL="${POST_INSTALL:-}"
+
 log() {
   printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" | tee -a "$DEPLOY_LOG"
 }
@@ -65,6 +80,11 @@ app_port() {
     port="$(sed -n 's/^[[:space:]]*PORT[[:space:]]*=[[:space:]]*//p' .env | tail -n 1 | tr -d "\"'\r ")"
   fi
   echo "${port:-5001}"
+}
+
+# True when an outside supervisor owns the server process (see RESTART_CMD).
+supervised() {
+  [ -n "$RESTART_CMD" ]
 }
 
 have_pm2() {
@@ -87,7 +107,9 @@ pid_running() {
 }
 
 is_running() {
-  if have_pm2; then
+  if supervised; then
+    http_ok
+  elif have_pm2; then
     pm2 describe "$APP_NAME" 2>/dev/null | grep -q "status.*online"
   else
     pid_running
@@ -95,6 +117,10 @@ is_running() {
 }
 
 stop_app() {
+  if supervised; then
+    log "the server is managed by RESTART_CMD's supervisor; stop it there"
+    return 1
+  fi
   if have_pm2; then
     pm2 stop "$APP_NAME" >/dev/null 2>&1
     return 0
@@ -116,6 +142,10 @@ stop_app() {
 }
 
 start_app() {
+  if supervised; then
+    bash -c "$RESTART_CMD"
+    return
+  fi
   if have_pm2; then
     if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
       pm2 restart "$APP_NAME" --update-env >/dev/null || return 1
@@ -137,11 +167,18 @@ start_app() {
 
 # Waits until the server answers HTTP. It only starts listening after MongoDB
 # connects, so any response below 500 means it is fully up.
+http_ok() {
+  node -e 'fetch(process.argv[1]).then((r) => process.exit(r.status < 500 ? 0 : 1), () => process.exit(1))' \
+    "http://127.0.0.1:$(app_port)/"
+}
+
 wait_healthy() {
-  local url waited=0
-  url="http://127.0.0.1:$(app_port)/"
+  local waited=0
+  # Give a restart a moment to take the old process down, so a server that is
+  # still on its way out does not count as the new one answering.
+  sleep 3
   while [ "$waited" -lt "$HEALTH_TIMEOUT" ]; do
-    if node -e 'fetch(process.argv[1]).then((r) => process.exit(r.status < 500 ? 0 : 1), () => process.exit(1))' "$url"; then
+    if http_ok; then
       return 0
     fi
     sleep 3
@@ -174,6 +211,10 @@ build() {
   if [ -z "$from" ] || [ ! -d node_modules ] || grep -qE '^package(-lock)?\.json$' <<<"$changed"; then
     log "installing server dependencies"
     npm ci --omit=dev --no-audit --no-fund || return 1
+    if [ -n "$POST_INSTALL" ]; then
+      log "running POST_INSTALL"
+      bash -c "$POST_INSTALL" || return 1
+    fi
   fi
 
   if [ -z "$from" ] || [ ! -d frontend/node_modules ] || grep -qE '^frontend/package(-lock)?\.json$' <<<"$changed"; then
@@ -211,7 +252,7 @@ release_lock() {
 deploy_once() {
   if ! git fetch --quiet "$DEPLOY_REMOTE" "$DEPLOY_BRANCH" 2>>"$DEPLOY_LOG"; then
     log "could not fetch $DEPLOY_REMOTE/$DEPLOY_BRANCH (offline, or CI has not promoted a commit yet)"
-    is_running || restart_app
+    supervised || is_running || restart_app
     return 0
   fi
 
@@ -222,8 +263,8 @@ deploy_once() {
 
   if [ "$current" = "$target" ] || [ "$target" = "$(cat "$FAILED_FILE" 2>/dev/null)" ]; then
     # Nothing new to deploy (or the new commit already failed once): just make
-    # sure the server is still running.
-    if ! is_running; then
+    # sure the server is still running, unless a supervisor already does that.
+    if ! supervised && ! is_running; then
       log "$APP_NAME is not running, starting it"
       [ -f frontend/dist/index.html ] || build "" HEAD || return 1
       restart_app

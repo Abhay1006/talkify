@@ -111,9 +111,32 @@ Follow along in the repo's **Actions** tab on GitHub, and on the tablet with
 Logs: `logs/deploy.log` for deploys; `logs/talkify.log` for the app, or
 `pm2 logs talkify` when pm2 is installed.
 
-Optional settings, as environment variables: `DEPLOY_BRANCH` (default
-`v2-deploy`), `DEPLOY_REMOTE` (`origin`), `APP_NAME` (`talkify`),
-`HEALTH_TIMEOUT` (`90` seconds), `PORT` (read from `.env`, else `5001`).
+Optional settings, as environment variables or in `.deploy/env` (sourced
+by the script, gitignored): `DEPLOY_BRANCH` (default `v2-deploy`),
+`DEPLOY_REMOTE` (`origin`), `APP_NAME` (`talkify`), `HEALTH_TIMEOUT` (`90`
+seconds), `PORT` (read from `.env`, else `5001`), `RESTART_CMD` and
+`POST_INSTALL` (see below).
+
+## When something else already runs the server
+
+If a supervisor (a tmux watchdog, systemd, ...) already starts the app and
+revives it after crashes, don't let the script start a second copy on the
+same port. Set `RESTART_CMD` to the command that restarts it through that
+supervisor. The script then only runs that command when deploying, and
+leaves crash recovery to the supervisor; `stop` is refused.
+
+`POST_INSTALL` runs after every server `npm ci`, for packages the host needs
+but the lockfile doesn't list. Example `.deploy/env` for a tablet whose
+services run in tmux session `services` and which needs sharp's WebAssembly
+build:
+
+```bash
+RESTART_CMD='tmux kill-window -t services:=talkify 2>/dev/null; tmux new-window -d -t services -n talkify "cd $HOME/projects/talkify && npm start"'
+POST_INSTALL='npm install --no-save --cpu=wasm32 @img/sharp-wasm32@$(node -p "require(\"./node_modules/sharp/package.json\").version")'
+```
+
+The `=` in `services:=talkify` makes tmux match the window name exactly, so
+it cannot hit a window like `talkify-tunnel` by prefix.
 
 ## Troubleshooting
 
