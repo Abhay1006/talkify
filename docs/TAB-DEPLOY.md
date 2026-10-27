@@ -41,50 +41,56 @@ F-Droid (the Play Store build is outdated). On a Linux tablet, skip the `pkg`
 and Termux:Boot parts.
 
 1. **Install the tools**
-    ```bash
-    pkg update && pkg install git nodejs
-    npm install -g pm2   # optional but recommended: restarts the app if it crashes
-    ```
+
+   ```bash
+   pkg update && pkg install git nodejs
+   npm install -g pm2   # optional but recommended: restarts the app if it crashes
+   ```
 
 2. **Clone the repo, or update the clone you already have**
-    ```bash
-    git clone -b v2-development https://github.com/Abhay1006/talkify.git ~/talkify
-    cd ~/talkify
-    cp .env.example .env   # then fill in MONGO_DB_URI, JWT_SECRET, PORT, ...
-    ```
-    If the tablet already has a clone, `cd` into it, `git pull origin v2-development`
-    once to get the script, and keep your existing `.env`. The deploy script
-    refuses to run while tracked files have local edits, so check `git status`
-    is clean (a `package-lock.json` changed by `npm install` is the usual
-    culprit: `git checkout -- package-lock.json frontend/package-lock.json`).
+
+   ```bash
+   git clone -b v2-development https://github.com/Abhay1006/talkify.git ~/talkify
+   cd ~/talkify
+   cp .env.example .env   # then fill in MONGO_DB_URI, JWT_SECRET, PORT, ...
+   ```
+
+   If the tablet already has a clone, `cd` into it, `git pull origin v2-development`
+   once to get the script, and keep your existing `.env`. The deploy script
+   refuses to run while tracked files have local edits, so check `git status`
+   is clean (a `package-lock.json` changed by `npm install` is the usual
+   culprit: `git checkout -- package-lock.json frontend/package-lock.json`).
 
 3. **Stop the server if you started it by hand**, then start it through the script:
-    ```bash
-    ./scripts/tab-deploy.sh            # installs, builds and starts the app
-    ./scripts/tab-deploy.sh status
-    ```
+
+   ```bash
+   ./scripts/tab-deploy.sh            # installs, builds and starts the app
+   ./scripts/tab-deploy.sh status
+   ```
 
 4. **Keep watching for new commits**
-    ```bash
-    ./scripts/tab-deploy.sh watch      # checks every 60 seconds; Ctrl+C stops watching, not the app
-    ```
-    `watch` takes a wake lock so Android does not suspend Termux with the
-    screen off. Also turn off battery optimisation for Termux in Android's
-    settings (Apps → Termux → Battery → Unrestricted).
+
+   ```bash
+   ./scripts/tab-deploy.sh watch      # checks every 60 seconds; Ctrl+C stops watching, not the app
+   ```
+
+   `watch` takes a wake lock so Android does not suspend Termux with the
+   screen off. Also turn off battery optimisation for Termux in Android's
+   settings (Apps → Termux → Battery → Unrestricted).
 
 5. **Start everything when the tablet boots** (optional). Install
    [Termux:Boot](https://f-droid.org/packages/com.termux.boot/), open it once,
    then:
-    ```bash
-    mkdir -p ~/.termux/boot
-    cat > ~/.termux/boot/talkify <<'EOF'
-    #!/data/data/com.termux/files/usr/bin/sh
-    termux-wake-lock
-    cd ~/talkify && ./scripts/tab-deploy.sh watch >/dev/null 2>&1 &
-    EOF
-    chmod +x ~/.termux/boot/talkify
-    ```
-    `watch` starts the app on its first check, so nothing else is needed.
+   ```bash
+   mkdir -p ~/.termux/boot
+   cat > ~/.termux/boot/talkify <<'EOF'
+   #!/data/data/com.termux/files/usr/bin/sh
+   termux-wake-lock
+   cd ~/talkify && ./scripts/tab-deploy.sh watch >/dev/null 2>&1 &
+   EOF
+   chmod +x ~/.termux/boot/talkify
+   ```
+   `watch` starts the app on its first check, so nothing else is needed.
 
 ## Day to day
 
@@ -100,13 +106,13 @@ Follow along in the repo's **Actions** tab on GitHub, and on the tablet with
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `scripts/tab-deploy.sh` | Deploy once if `v2-deploy` has moved; start the app if it is down |
-| `scripts/tab-deploy.sh watch [seconds]` | Do that forever, every 60 seconds by default |
-| `scripts/tab-deploy.sh status` | Deployed commit, skipped failed commit, whether the app runs |
-| `scripts/tab-deploy.sh restart` | Restart the app without pulling (e.g. after editing `.env`) |
-| `scripts/tab-deploy.sh stop` | Stop the app |
+| Command                                 | What it does                                                      |
+| --------------------------------------- | ----------------------------------------------------------------- |
+| `scripts/tab-deploy.sh`                 | Deploy once if `v2-deploy` has moved; start the app if it is down |
+| `scripts/tab-deploy.sh watch [seconds]` | Do that forever, every 60 seconds by default                      |
+| `scripts/tab-deploy.sh status`          | Deployed commit, skipped failed commit, whether the app runs      |
+| `scripts/tab-deploy.sh restart`         | Restart the app without pulling (e.g. after editing `.env`)       |
+| `scripts/tab-deploy.sh stop`            | Stop the app                                                      |
 
 Logs: `logs/deploy.log` for deploys; `logs/talkify.log` for the app, or
 `pm2 logs talkify` when pm2 is installed.
