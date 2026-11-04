@@ -24,32 +24,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
           cache-dependency-path: |
-            package-lock.json
-            frontend/package-lock.json
+            pnpm-lock.yaml
+            frontend/pnpm-lock.yaml
 
       - name: Install
         run: |
-          npm ci
-          npm ci --prefix frontend
+          pnpm install --frozen-lockfile
+          pnpm --dir frontend install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Format
-        run: npm run format:check
+        run: pnpm run format:check
 
       - name: Test
-        run: npm test
+        run: pnpm test
         env:
           MONGO_TEST_URI: mongodb://127.0.0.1:27017
 
       - name: Build frontend
-        run: npm run build --prefix frontend
+        run: pnpm --dir frontend build
 
   # Continuous delivery for the self-hosted tablet. Once a push to
   # v2-development passes every check, point the `v2-deploy` branch at that

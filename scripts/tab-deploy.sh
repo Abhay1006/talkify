@@ -6,7 +6,7 @@
 # runs on the tablet, watches that branch, and when it moves:
 #
 #   1. fast-forwards the checkout to the new commit,
-#   2. reinstalls dependencies only if a package-lock.json changed,
+#   2. reinstalls dependencies only if a lockfile or package.json changed,
 #   3. rebuilds the frontend only if something under frontend/ changed,
 #   4. restarts the server and waits for it to answer,
 #   5. rolls back to the previous commit if any of that fails.
@@ -29,8 +29,8 @@
 #                   watchdog, systemd, ...): the script then only runs this to
 #                   restart, never starts its own copy, and leaves crash
 #                   recovery to that supervisor.
-#   POST_INSTALL    shell command run after every `npm ci` of the server, for
-#                   host-only packages that `npm ci` removes again.
+#   POST_INSTALL    shell command run after every install of the server's
+#                   dependencies, for host-only packages the install removes again.
 #
 # Settings can also go in .deploy/env (sourced, gitignored), which keeps them
 # with the checkout instead of in whatever starts `watch`.
@@ -208,23 +208,34 @@ build() {
     changed="$(git diff --name-only "$from" "$to")"
   fi
 
-  if [ -z "$from" ] || [ ! -d node_modules ] || grep -qE '^package(-lock)?\.json$' <<<"$changed"; then
+  # CI=true: without a terminal, pnpm refuses to replace a node_modules
+  # another package manager created instead of asking.
+  if [ -z "$from" ] || [ ! -d node_modules ] || grep -qE '^(package\.json|package-lock\.json|pnpm-lock\.yaml)$' <<<"$changed"; then
     log "installing server dependencies"
-    npm ci --omit=dev --no-audit --no-fund || return 1
+    if [ ! -f pnpm-lock.yaml ] && [ -f package-lock.json ]; then
+      # A rollback to a commit from before the move to pnpm.
+      npm ci --omit=dev --no-audit --no-fund || return 1
+    else
+      CI=true pnpm install --frozen-lockfile --prod || return 1
+    fi
     if [ -n "$POST_INSTALL" ]; then
       log "running POST_INSTALL"
       bash -c "$POST_INSTALL" || return 1
     fi
   fi
 
-  if [ -z "$from" ] || [ ! -d frontend/node_modules ] || grep -qE '^frontend/package(-lock)?\.json$' <<<"$changed"; then
+  if [ -z "$from" ] || [ ! -d frontend/node_modules ] || grep -qE '^frontend/(package\.json|package-lock\.json|pnpm-lock\.yaml)$' <<<"$changed"; then
     log "installing frontend dependencies"
-    npm ci --prefix frontend --no-audit --no-fund || return 1
+    if [ ! -f frontend/pnpm-lock.yaml ] && [ -f frontend/package-lock.json ]; then
+      npm ci --prefix frontend --no-audit --no-fund || return 1
+    else
+      CI=true pnpm --dir frontend install --frozen-lockfile || return 1
+    fi
   fi
 
   if [ -z "$from" ] || [ ! -f frontend/dist/index.html ] || grep -q '^frontend/' <<<"$changed"; then
     log "building frontend"
-    npm run build --prefix frontend || return 1
+    pnpm --dir frontend build || return 1
   fi
 }
 

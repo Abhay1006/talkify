@@ -45,6 +45,7 @@ deliberately plain: no decoration, just the conversation. It runs on
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/en/download/) 22 or newer
+- [pnpm](https://pnpm.io/installation) (the version is pinned by `packageManager` in `package.json`; `npm install -g pnpm` or `corepack enable`)
 - MongoDB running locally, or a [MongoDB Atlas](https://www.mongodb.com/atlas) connection string
 
 ### Steps
@@ -53,8 +54,8 @@ deliberately plain: no decoration, just the conversation. It runs on
     ```bash
     git clone https://github.com/Abhay1006/talkify.git
     cd talkify
-    npm install
-    npm install --prefix frontend
+    pnpm install
+    pnpm --dir frontend install
     ```
 
 2. **Configure the environment**
@@ -65,7 +66,7 @@ deliberately plain: no decoration, just the conversation. It runs on
 
 3. **Run in development**
     ```bash
-    npm run dev
+    pnpm run dev
     ```
     This starts the API on `http://localhost:5001` and the Vite dev server on
     **`http://localhost:3000`**. Open port 3000; it proxies `/api` and
@@ -73,20 +74,20 @@ deliberately plain: no decoration, just the conversation. It runs on
 
 4. **Run a production build locally** (optional)
     ```bash
-    npm run build    # installs dependencies and builds frontend/dist
-    npm start        # serves the API and the built app on http://localhost:5001
+    pnpm run build   # installs dependencies and builds frontend/dist
+    pnpm start       # serves the API and the built app on http://localhost:5001
     ```
 
 ## Scripts
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | API (with nodemon) and Vite dev server together |
-| `npm start` | Production server; serves `frontend/dist` |
-| `npm run build` | Installs all dependencies and builds the frontend |
-| `npm run lint` | ESLint for backend and frontend |
-| `npm run format` / `format:check` | Prettier |
-| `npm test` | Backend tests. Integration tests run only when `MONGO_TEST_URI` is set |
+| `pnpm run dev` | API (with nodemon) and Vite dev server together |
+| `pnpm start` | Production server; serves `frontend/dist` |
+| `pnpm run build` | Installs all dependencies and builds the frontend |
+| `pnpm run lint` | ESLint for backend and frontend |
+| `pnpm run format` / `format:check` | Prettier |
+| `pnpm test` | Backend tests. Integration tests run only when `MONGO_TEST_URI` is set |
 
 CI (`.github/workflows/ci.yml`) runs lint, format check, the full test suite
 against a MongoDB service container, and the frontend build on every PR and on
@@ -102,7 +103,7 @@ every push to `master` and `v2-development`.
 | `NODE_ENV` | no | `development` locally. Only controls the extra Socket.IO origin for the Vite dev server. |
 | `CLIENT_ORIGINS` | no | Extra comma-separated origins allowed to open a Socket.IO connection. |
 | `MONGO_TEST_URI` | no | MongoDB server for integration tests. |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | no | Turn on push notifications. Generate once with `npx web-push generate-vapid-keys` and keep them stable: changing them breaks existing subscriptions. `VAPID_SUBJECT` is a `mailto:` or `https:` contact. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | no | Turn on push notifications. Generate once with `pnpm exec web-push generate-vapid-keys` and keep them stable: changing them breaks existing subscriptions. `VAPID_SUBJECT` is a `mailto:` or `https:` contact. |
 | `ICE_SERVERS` | no | JSON array of WebRTC ICE servers for calls, e.g. to add a TURN relay. Defaults to Google's public STUN servers, which can't connect roughly 1 call in 6 on mobile data or office networks. |
 
 The session cookie's `Secure` flag follows the actual request: it is set over
@@ -113,8 +114,8 @@ configuration.
 
 The app is deployed on Render as a single web service:
 
-- **Build command**: `npm run build`
-- **Start command**: `npm start`
+- **Build command**: `corepack enable && pnpm run build` (pnpm is pinned by `packageManager` in `package.json`)
+- **Start command**: `pnpm start`
 - **Environment**: set `MONGO_DB_URI` and `JWT_SECRET` in the Render dashboard, plus the optional push and `ICE_SERVERS` settings above.
 
 Calls and installing the app need HTTPS, which Render provides. Images and voice
@@ -143,7 +144,7 @@ Run these against production (after a backup) when the release notes call for th
 ## Contributing
 
 Suggestions and fixes are welcome: open an issue or a pull request. Please run
-`npm run lint`, `npm run format` and `npm test` first.
+`pnpm run lint`, `pnpm run format` and `pnpm test` first.
 
 ## License
 

@@ -3,9 +3,9 @@
 React 18 + Vite + MUI. See the [root README](../README.md) for setup.
 
 ```bash
-npm run dev      # dev server on http://localhost:3000, proxies /api and /socket.io to :5001
-npm run build    # production build into dist/, served by the Express server
-npm run lint
+pnpm run dev     # dev server on http://localhost:3000, proxies /api and /socket.io to :5001
+pnpm run build   # production build into dist/, served by the Express server
+pnpm run lint
 ```
 
 Server state lives in React Query (`src/queries/`). Socket events

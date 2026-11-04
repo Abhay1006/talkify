@@ -1,0 +1,9 @@
+# Settings only: talkify is not a workspace. frontend/ is a separate project
+# with its own lockfile (and its own pnpm-workspace.yaml).
+
+# sharp has no native build for Android (Termux), so the tablet needs its
+# WebAssembly build. Installing it everywhere costs a few MB and is harmless:
+# sharp prefers a native build when there is one.
+supportedArchitectures:
+  os: [current]
+  cpu: [current, wasm32]

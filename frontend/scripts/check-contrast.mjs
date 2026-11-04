@@ -2,7 +2,7 @@
  * Fails if any text/background pair the UI renders drops below WCAG AA (4.5:1).
  *
  * Token values are read out of index.css rather than duplicated here, so the
- * check cannot drift away from what actually ships. Run: npm run check:contrast
+ * check cannot drift away from what actually ships. Run: pnpm run check:contrast
  */
 import fs from "fs";
 import path from "path";

@@ -1,0 +1,5 @@
+# frontend/ is its own project, not part of the root pnpm-workspace.yaml.
+
+# Only checks that the right platform binary is installed.
+allowBuilds:
+  esbuild: true

@@ -6,7 +6,7 @@ import ConversationPref from "../models/conversationPref.model.js";
 // reaches their phone or desktop through the browser's push service.
 //
 // Needs VAPID keys, set once and kept stable (rotating them invalidates every
-// existing subscription). Generate with:  npx web-push generate-vapid-keys
+// existing subscription). Generate with:  pnpm exec web-push generate-vapid-keys
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto: or https: URL)
 // Without them push is simply off and the rest of the app is unaffected.
 

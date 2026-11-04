@@ -27,7 +27,7 @@ Never push to `v2-deploy` yourself in normal use; CI owns it.
 ## What a deploy does
 
 1. Fast-forwards the tablet's checkout to the new commit.
-2. Runs `npm ci` only if `package-lock.json` changed, and `npm ci --prefix frontend` only if `frontend/package-lock.json` changed.
+2. Runs `pnpm install --frozen-lockfile --prod` only if `pnpm-lock.yaml` or `package.json` changed, and `pnpm --dir frontend install --frozen-lockfile` only if `frontend/pnpm-lock.yaml` or `frontend/package.json` changed.
 3. Rebuilds the frontend only if something under `frontend/` changed. Backend-only changes just restart.
 4. Restarts the server and waits up to 90 seconds for it to answer on `PORT`.
 5. If any step fails, it goes back to the previous commit, rebuilds and restarts that, and skips the bad commit until a newer one arrives.
@@ -44,6 +44,7 @@ and Termux:Boot parts.
 
    ```bash
    pkg update && pkg install git nodejs
+   npm install -g pnpm  # the version is pinned by packageManager in package.json
    npm install -g pm2   # optional but recommended: restarts the app if it crashes
    ```
 
@@ -58,8 +59,8 @@ and Termux:Boot parts.
    If the tablet already has a clone, `cd` into it, `git pull origin v2-development`
    once to get the script, and keep your existing `.env`. The deploy script
    refuses to run while tracked files have local edits, so check `git status`
-   is clean (a `package-lock.json` changed by `npm install` is the usual
-   culprit: `git checkout -- package-lock.json frontend/package-lock.json`).
+   is clean (a lockfile changed by a plain `pnpm install` is the usual
+   culprit: `git checkout -- pnpm-lock.yaml frontend/pnpm-lock.yaml`).
 
 3. **Stop the server if you started it by hand**, then start it through the script:
 
@@ -131,14 +132,15 @@ same port. Set `RESTART_CMD` to the command that restarts it through that
 supervisor. The script then only runs that command when deploying, and
 leaves crash recovery to the supervisor; `stop` is refused.
 
-`POST_INSTALL` runs after every server `npm ci`, for packages the host needs
-but the lockfile doesn't list. Example `.deploy/env` for a tablet whose
-services run in tmux session `services` and which needs sharp's WebAssembly
-build:
+`POST_INSTALL` runs after every install of the server's dependencies, for
+packages the host needs but the lockfile doesn't list. sharp's WebAssembly
+build, which Android needs, no longer needs it: `pnpm-workspace.yaml` adds
+`wasm32` to `supportedArchitectures`, so the lockfile installs it everywhere.
+Example `.deploy/env` for a tablet whose services run in tmux session
+`services`:
 
 ```bash
-RESTART_CMD='tmux kill-window -t services:=talkify 2>/dev/null; tmux new-window -d -t services -n talkify "cd $HOME/projects/talkify && npm start"'
-POST_INSTALL='npm install --no-save --cpu=wasm32 @img/sharp-wasm32@$(node -p "require(\"./node_modules/sharp/package.json\").version")'
+RESTART_CMD='tmux kill-window -t services:=talkify 2>/dev/null; tmux new-window -d -t services -n talkify "cd $HOME/projects/talkify && pnpm start"'
 ```
 
 The `=` in `services:=talkify` makes tmux match the window name exactly, so
