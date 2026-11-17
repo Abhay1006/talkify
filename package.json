@@ -17,7 +17,7 @@
     "format:check": "prettier --check backend frontend/src",
     "test": "node --test --test-concurrency=1 \"backend/tests/*.test.js\""
   },
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",

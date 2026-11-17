@@ -135,7 +135,7 @@ Suggestions and fixes are welcome: open an issue or a pull request. Please run
 
 ## License
 
-ISC
+[MIT](LICENSE) © 2026 Abhay Pratap Singh
 
 ## App usage
 
